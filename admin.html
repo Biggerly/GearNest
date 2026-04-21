@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gearnest Admin</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --surface: #13131a;
+            --surface2: #1c1c28;
+            --border: #2a2a3d;
+            --accent: #6c63ff;
+            --accent2: #ff6b6b;
+            --accent3: #43e97b;
+            --text: #e8e8f0;
+            --muted: #6b6b80;
+            --mono: 'Space Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .shell { display: flex; min-height: 100vh; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 220px;
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 100;
+            padding: 0 0 24px;
+        }
+        .sidebar-logo {
+            padding: 28px 24px 24px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+        .sidebar-logo span {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .sidebar-logo p { color: var(--muted); font-size: 0.65rem; font-family: var(--mono); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.1em; }
+
+        .nav-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 24px;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.15s;
+            border-left: 3px solid transparent;
+            text-decoration: none;
+        }
+        .nav-item:hover { color: var(--text); background: var(--surface2); }
+        .nav-item.active { color: var(--accent); border-left-color: var(--accent); background: rgba(108,99,255,0.08); }
+        .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding: 16px 24px 0;
+            border-top: 1px solid var(--border);
+        }
+        .sidebar-footer a {
+            color: var(--muted);
+            font-size: 0.75rem;
+            text-decoration: none;
+            font-family: var(--mono);
+            display: block;
+            padding: 6px 0;
+        }
+        .sidebar-footer a:hover { color: var(--accent3); }
+
+        /* Main content */
+        .main { margin-left: 220px; padding: 36px 40px; flex: 1; }
+
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* Page header */
+        .page-header { margin-bottom: 32px; }
+        .page-header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -0.04em; }
+        .page-header p { color: var(--muted); font-size: 0.85rem; margin-top: 4px; font-family: var(--mono); }
+
+        /* Stats grid */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 32px; }
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+        .stat-card.purple::before { background: linear-gradient(90deg, var(--accent), #a78bfa); }
+        .stat-card.red::before { background: linear-gradient(90deg, var(--accent2), #ff9f43); }
+        .stat-card.green::before { background: linear-gradient(90deg, var(--accent3), #00d2d3); }
+        .stat-card.blue::before { background: linear-gradient(90deg, #74b9ff, #0984e3); }
+
+        .stat-label { font-size: 0.7rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px; }
+        .stat-value { font-size: 2.2rem; font-weight: 800; letter-spacing: -0.04em; }
+        .stat-sub { font-size: 0.72rem; color: var(--muted); margin-top: 6px; font-family: var(--mono); }
+
+        /* Chart area */
+        .chart-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; margin-bottom: 32px; }
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .chart-title { font-size: 0.75rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 20px; }
+
+        /* Bar chart */
+        .bar-chart { display: flex; align-items: flex-end; gap: 6px; height: 120px; }
+        .bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+        .bar {
+            width: 100%;
+            background: linear-gradient(180deg, var(--accent), rgba(108,99,255,0.3));
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            transition: height 0.6s cubic-bezier(0.34,1.56,0.64,1);
+            position: relative;
+            cursor: default;
+        }
+        .bar:hover { filter: brightness(1.3); }
+        .bar-label { font-size: 0.6rem; font-family: var(--mono); color: var(--muted); }
+
+        /* Top products list */
+        .top-product {
+            display: flex; align-items: center; gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .top-product:last-child { border-bottom: none; }
+        .top-product-rank { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); width: 20px; }
+        .top-product-name { flex: 1; font-size: 0.82rem; font-weight: 600; }
+        .top-product-views { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); }
+        .top-product-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 4px; }
+        .top-product-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.6s ease; }
+
+        /* Section heading */
+        .section-heading {
+            font-size: 0.7rem; font-family: var(--mono);
+            color: var(--muted); text-transform: uppercase;
+            letter-spacing: 0.12em; margin-bottom: 16px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-heading::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+        /* Products table */
+        .product-table { width: 100%; border-collapse: collapse; }
+        .product-table th {
+            text-align: left; padding: 10px 14px;
+            font-size: 0.65rem; font-family: var(--mono);
+            color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em;
+            border-bottom: 1px solid var(--border);
+        }
+        .product-table td {
+            padding: 14px 14px;
+            font-size: 0.83rem;
+            border-bottom: 1px solid rgba(42,42,61,0.5);
+            vertical-align: middle;
+        }
+        .product-table tr:hover td { background: var(--surface2); }
+        .product-img { width: 40px; height: 40px; object-fit: contain; background: var(--surface2); border-radius: 8px; padding: 4px; }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            font-family: var(--mono);
+            text-transform: uppercase;
+        }
+        .badge-phone { background: rgba(108,99,255,0.15); color: #a78bfa; }
+        .badge-laptop { background: rgba(67,233,123,0.12); color: #43e97b; }
+        .badge-tablet { background: rgba(116,185,255,0.12); color: #74b9ff; }
+        .badge-other { background: rgba(255,107,107,0.12); color: #ff6b6b; }
+
+        .btn-delete {
+            background: rgba(255,107,107,0.1);
+            color: var(--accent2);
+            border: 1px solid rgba(255,107,107,0.2);
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 0.72rem;
+            font-family: var(--mono);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .btn-delete:hover { background: rgba(255,107,107,0.25); }
+
+        /* Add product form */
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            max-width: 680px;
+        }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-label { font-size: 0.68rem; font-family: var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; }
+        .form-input {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 11px 14px;
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.82rem;
+            outline: none;
+            transition: border-color 0.15s;
+            width: 100%;
+        }
+        .form-input:focus { border-color: var(--accent); }
+        .form-input::placeholder { color: var(--muted); }
+        select.form-input { cursor: pointer; }
+
+        /* Specs builder */
+        .spec-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .btn-add-spec {
+            background: none; border: 1px dashed var(--border);
+            color: var(--muted); padding: 9px; border-radius: 10px;
+            font-size: 0.75rem; font-family: var(--mono);
+            cursor: pointer; width: 100%; transition: all 0.15s;
+            margin-top: 4px;
+        }
+        .btn-add-spec:hover { border-color: var(--accent); color: var(--accent); }
+        .btn-remove-spec {
+            background: none; border: none;
+            color: var(--muted); cursor: pointer;
+            font-size: 1.1rem; padding: 4px 8px;
+            border-radius: 6px; transition: all 0.15s;
+        }
+        .btn-remove-spec:hover { color: var(--accent2); background: rgba(255,107,107,0.1); }
+
+        /* Image URL list */
+        .img-url-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-bottom: 8px; }
+
+        /* Submit button */
+        .btn-submit {
+            background: linear-gradient(135deg, var(--accent), #a78bfa);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-family: var(--sans);
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 8px;
+            letter-spacing: -0.02em;
+        }
+        .btn-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(108,99,255,0.4); }
+        .btn-submit:active { transform: translateY(0); }
+        .btn-submit:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+        /* Toast */
+        .toast {
+            position: fixed; bottom: 28px; right: 28px;
+            padding: 14px 20px;
+            border-radius: 12px;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            z-index: 9999;
+            transform: translateY(80px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+            pointer-events: none;
+        }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.success { background: rgba(67,233,123,0.15); border: 1px solid rgba(67,233,123,0.3); color: #43e97b; }
+        .toast.error { background: rgba(255,107,107,0.15); border: 1px solid rgba(255,107,107,0.3); color: #ff6b6b; }
+
+        /* Loading overlay */
+        .loading-overlay {
+            display: none;
+            position: fixed; inset: 0;
+            background: rgba(10,10,15,0.6);
+            z-index: 500; align-items: center; justify-content: center;
+        }
+        .loading-overlay.show { display: flex; }
+        .spinner {
+            width: 36px; height: 36px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar { width: 64px; }
+            .sidebar-logo span, .sidebar-logo p, .nav-item span, .sidebar-footer { display: none; }
+            .nav-item { padding: 14px; justify-content: center; }
+            .main { margin-left: 64px; padding: 24px 16px; }
+            .chart-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+            .form-group.full { grid-column: auto; }
+        }
+
+        /* Empty state */
+        .empty { text-align: center; padding: 60px 20px; color: var(--muted); }
+        .empty svg { margin: 0 auto 16px; opacity: 0.3; }
+        .empty p { font-family: var(--mono); font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+
+<div class="shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="sidebar-logo">
+            <span>GEARNEST</span>
+            <p>Admin Panel</p>
+        </div>
+
+        <nav>
+            <a class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+                <span>Dashboard</span>
+            </a>
+            <a class="nav-item" onclick="showPage('products')" id="nav-products">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+                <span>Products</span>
+            </a>
+            <a class="nav-item" onclick="showPage('add')" id="nav-add">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                <span>Add Product</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="index.html" target="_blank">↗ View Site</a>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+        <!-- DASHBOARD PAGE -->
+        <div class="page active" id="page-dashboard">
+            <div class="page-header">
+                <h1>Dashboard</h1>
+                <p>// live stats from firestore</p>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card purple">
+                    <div class="stat-label">Total Page Views</div>
+                    <div class="stat-value" id="stat-pageviews">—</div>
+                    <div class="stat-sub">all time</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-label">Today's Views</div>
+                    <div class="stat-value" id="stat-today">—</div>
+                    <div class="stat-sub" id="stat-date">loading...</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-label">Total Products</div>
+                    <div class="stat-value" id="stat-products">—</div>
+                    <div class="stat-sub">in catalog</div>
+                </div>
+                <div class="stat-card blue">
+                    <div class="stat-label">Product Views</div>
+                    <div class="stat-value" id="stat-productviews">—</div>
+                    <div class="stat-sub">total clicks</div>
+                </div>
+            </div>
+
+            <div class="chart-grid">
+                <div class="chart-card">
+                    <div class="chart-title">// page views — last 7 days</div>
+                    <div class="bar-chart" id="bar-chart">
+                        <div style="color:var(--muted);font-family:var(--mono);font-size:0.75rem;margin:auto;">Loading chart...</div>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-title">// top viewed products</div>
+                    <div id="top-products-list">
+                        <div style="color:var(--muted);font-family:var(--mono);font-size:0.75rem;padding:20px 0;">Loading...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PRODUCTS PAGE -->
+        <div class="page" id="page-products">
+            <div class="page-header">
+                <h1>Products</h1>
+                <p>// manage your catalog</p>
+            </div>
+            <div class="chart-card" style="overflow-x:auto;">
+                <table class="product-table" id="products-table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Specs</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-tbody">
+                        <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:0.8rem;">Loading products...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ADD PRODUCT PAGE -->
+        <div class="page" id="page-add">
+            <div class="page-header">
+                <h1>Add Product</h1>
+                <p>// push a new device to firestore</p>
+            </div>
+
+            <div class="form-card">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Product Name</label>
+                        <input class="form-input" id="f-name" placeholder="e.g. iPhone 16 Pro Max">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <select class="form-input" id="f-category">
+                            <option value="Phones">Phones</option>
+                            <option value="Laptops">Laptops</option>
+                            <option value="Tablets">Tablets</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Price (₦)</label>
+                        <input class="form-input" id="f-price" placeholder="e.g. 1,550,000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category Badge</label>
+                        <input class="form-input" id="f-badge" placeholder="e.g. New Arrival">
+                    </div>
+
+                    <!-- Image URLs -->
+                    <div class="form-group full">
+                        <label class="form-label">Image URLs</label>
+                        <div id="image-list">
+                            <div class="img-url-row">
+                                <input class="form-input img-url" placeholder="https://...image.png">
+                                <button class="btn-remove-spec" onclick="removeImgRow(this)">×</button>
+                            </div>
+                        </div>
+                        <button class="btn-add-spec" onclick="addImgRow()">+ Add another image</button>
+                    </div>
+
+                    <!-- Specs -->
+                    <div class="form-group full">
+                        <label class="form-label">Specifications</label>
+                        <div id="specs-list">
+                            <div class="spec-row">
+                                <input class="form-input spec-key" placeholder="Key (e.g. Chip)">
+                                <input class="form-input spec-val" placeholder="Value (e.g. A17 Pro)">
+                                <button class="btn-remove-spec" onclick="removeSpecRow(this)">×</button>
+                            </div>
+                        </div>
+                        <button class="btn-add-spec" onclick="addSpecRow()">+ Add spec</button>
+                    </div>
+
+                    <div class="form-group full">
+                        <button class="btn-submit" id="submit-btn" onclick="submitProduct()">
+                            Push to Firestore →
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Loading -->
+<div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { 
+        getFirestore, collection, getDocs, addDoc, deleteDoc, doc, 
+        serverTimestamp, orderBy, query, limit
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCtj7-YA1S8FlWS6MCNwGUezEuXnkdj84U",
+        authDomain: "gearnested.firebaseapp.com",
+        projectId: "gearnested",
+        storageBucket: "gearnested.firebasestorage.app",
+        messagingSenderId: "114468029326",
+        appId: "1:114468029326:web:be9cb0c5bca48ce54bdadf",
+        measurementId: "G-YLHL3PXKQP"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ---- Helpers ----
+    window.showToast = (msg, type = 'success') => {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type} show`;
+        setTimeout(() => t.className = 'toast', 3000);
+    };
+
+    const setLoading = (v) => {
+        document.getElementById('loading').className = 'loading-overlay' + (v ? ' show' : '');
+    };
+
+    // ---- Navigation ----
+    window.showPage = (page) => {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        document.getElementById(`page-${page}`).classList.add('active');
+        document.getElementById(`nav-${page}`).classList.add('active');
+        if (page === 'products') loadProducts();
+        if (page === 'dashboard') loadDashboard();
+    };
+
+    // ---- Dashboard ----
+    let allProducts = [];
+
+    const loadDashboard = async () => {
+        try {
+            // Page views total
+            const trafficSnap = await getDocs(collection(db, "traffic"));
+            let totalViews = 0, todayViews = 0;
+            const today = new Date().toISOString().split('T')[0];
+            const last7 = {};
+
+            // Build last 7 days keys
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                last7[d.toISOString().split('T')[0]] = 0;
+            }
+
+            trafficSnap.forEach(doc => {
+                const data = doc.data();
+                if (doc.id === '__total__') {
+                    totalViews = data.pageViews || 0;
+                } else {
+                    if (doc.id === today) todayViews = data.pageViews || 0;
+                    if (last7.hasOwnProperty(doc.id)) last7[doc.id] = data.pageViews || 0;
+                }
+            });
+
+            document.getElementById('stat-pageviews').textContent = totalViews.toLocaleString();
+            document.getElementById('stat-today').textContent = todayViews.toLocaleString();
+            document.getElementById('stat-date').textContent = today;
+
+            // Products count
+            const prodSnap = await getDocs(collection(db, "products"));
+            allProducts = prodSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            document.getElementById('stat-products').textContent = allProducts.length;
+
+            // Product views
+            const pvSnap = await getDocs(collection(db, "productViews"));
+            let totalPV = 0;
+            const pvData = [];
+            pvSnap.forEach(d => {
+                const data = d.data();
+                totalPV += data.views || 0;
+                pvData.push({ name: data.name, views: data.views || 0 });
+            });
+            pvData.sort((a, b) => b.views - a.views);
+            document.getElementById('stat-productviews').textContent = totalPV.toLocaleString();
+
+            // Bar chart
+            renderBarChart(last7);
+
+            // Top products
+            renderTopProducts(pvData.slice(0, 5));
+
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to load dashboard', 'error');
+        }
+    };
+
+    const renderBarChart = (last7) => {
+        const container = document.getElementById('bar-chart');
+        const entries = Object.entries(last7);
+        const max = Math.max(...entries.map(e => e[1]), 1);
+        container.innerHTML = entries.map(([date, views]) => {
+            const pct = Math.max((views / max) * 100, 2);
+            const label = new Date(date).toLocaleDateString('en', { weekday: 'short' });
+            return `
+                <div class="bar-wrap" title="${date}: ${views} views">
+                    <div class="bar" style="height:${pct}%"></div>
+                    <span class="bar-label">${label}</span>
+                </div>`;
+        }).join('');
+    };
+
+    const renderTopProducts = (products) => {
+        const container = document.getElementById('top-products-list');
+        if (!products.length) {
+            container.innerHTML = `<div class="empty"><p>No product views yet</p></div>`;
+            return;
+        }
+        const max = products[0].views;
+        container.innerHTML = products.map((p, i) => `
+            <div class="top-product">
+                <span class="top-product-rank">#${i + 1}</span>
+                <div style="flex:1;min-width:0;">
+                    <div class="top-product-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${p.name}</div>
+                    <div class="top-product-bar"><div class="top-product-bar-fill" style="width:${(p.views/max)*100}%"></div></div>
+                </div>
+                <span class="top-product-views">${p.views}</span>
+            </div>`).join('');
+    };
+
+    // ---- Products list ----
+    const loadProducts = async () => {
+        const tbody = document.getElementById('products-tbody');
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);font-family:var(--mono);font-size:0.8rem;">Loading...</td></tr>`;
+        try {
+            const snap = await getDocs(collection(db, "products"));
+            const products = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            if (!products.length) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:60px;color:var(--muted);font-family:var(--mono);font-size:0.8rem;">No products yet. Add your first one →</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = products.map(p => {
+                const cat = p.category || 'Other';
+                const badgeClass = cat === 'Phones' ? 'badge-phone' : cat === 'Laptops' ? 'badge-laptop' : cat === 'Tablets' ? 'badge-tablet' : 'badge-other';
+                const specsStr = p.specs ? Object.entries(p.specs).map(([k,v]) => `${k}: ${v}`).join(', ') : '—';
+                const imgSrc = (p.images && p.images[0]) ? p.images[0] : '';
+                return `
+                <tr>
+                    <td><img class="product-img" src="${imgSrc}" onerror="this.style.opacity=0.2" alt="${p.name}"></td>
+                    <td style="font-weight:600;max-width:180px;">${p.name}</td>
+                    <td><span class="badge ${badgeClass}">${cat}</span></td>
+                    <td style="font-family:var(--mono);">₦${p.price}</td>
+                    <td style="color:var(--muted);font-size:0.75rem;font-family:var(--mono);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${specsStr}</td>
+                    <td><button class="btn-delete" onclick="deleteProduct('${p.id}')">Delete</button></td>
+                </tr>`;
+            }).join('');
+        } catch (e) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--accent2);font-family:var(--mono);font-size:0.8rem;">Failed to load products</td></tr>`;
+        }
+    };
+
+    window.deleteProduct = async (id) => {
+        if (!confirm('Delete this product? This cannot be undone.')) return;
+        setLoading(true);
+        try {
+            await deleteDoc(doc(db, "products", id));
+            showToast('Product deleted');
+            loadProducts();
+        } catch (e) {
+            showToast('Delete failed', 'error');
+        }
+        setLoading(false);
+    };
+
+    // ---- Add product ----
+    window.addSpecRow = () => {
+        const row = document.createElement('div');
+        row.className = 'spec-row';
+        row.innerHTML = `
+            <input class="form-input spec-key" placeholder="Key (e.g. RAM)">
+            <input class="form-input spec-val" placeholder="Value (e.g. 16GB)">
+            <button class="btn-remove-spec" onclick="removeSpecRow(this)">×</button>`;
+        document.getElementById('specs-list').appendChild(row);
+    };
+
+    window.removeSpecRow = (btn) => {
+        const rows = document.querySelectorAll('.spec-row');
+        if (rows.length > 1) btn.closest('.spec-row').remove();
+    };
+
+    window.addImgRow = () => {
+        const row = document.createElement('div');
+        row.className = 'img-url-row';
+        row.innerHTML = `
+            <input class="form-input img-url" placeholder="https://...image.png">
+            <button class="btn-remove-spec" onclick="removeImgRow(this)">×</button>`;
+        document.getElementById('image-list').appendChild(row);
+    };
+
+    window.removeImgRow = (btn) => {
+        const rows = document.querySelectorAll('.img-url-row');
+        if (rows.length > 1) btn.closest('.img-url-row').remove();
+    };
+
+    window.submitProduct = async () => {
+        const name = document.getElementById('f-name').value.trim();
+        const category = document.getElementById('f-category').value;
+        const price = document.getElementById('f-price').value.trim();
+
+        if (!name || !price) { showToast('Name and price are required', 'error'); return; }
+
+        // Collect images
+        const images = [...document.querySelectorAll('.img-url')]
+            .map(i => i.value.trim()).filter(Boolean);
+
+        // Collect specs
+        const specs = {};
+        document.querySelectorAll('.spec-row').forEach(row => {
+            const k = row.querySelector('.spec-key').value.trim();
+            const v = row.querySelector('.spec-val').value.trim();
+            if (k && v) specs[k] = v;
+        });
+
+        const product = { name, category, price, images, specs, createdAt: serverTimestamp() };
+
+        setLoading(true);
+        document.getElementById('submit-btn').disabled = true;
+        try {
+            await addDoc(collection(db, "products"), product);
+            showToast(`${name} added successfully!`);
+            // Reset form
+            document.getElementById('f-name').value = '';
+            document.getElementById('f-price').value = '';
+            document.getElementById('f-badge').value = '';
+            document.getElementById('specs-list').innerHTML = `
+                <div class="spec-row">
+                    <input class="form-input spec-key" placeholder="Key (e.g. Chip)">
+                    <input class="form-input spec-val" placeholder="Value (e.g. A17 Pro)">
+                    <button class="btn-remove-spec" onclick="removeSpecRow(this)">×</button>
+                </div>`;
+            document.getElementById('image-list').innerHTML = `
+                <div class="img-url-row">
+                    <input class="form-input img-url" placeholder="https://...image.png">
+                    <button class="btn-remove-spec" onclick="removeImgRow(this)">×</button>
+                </div>`;
+        } catch (e) {
+            console.error(e);
+            showToast('Failed to add product', 'error');
+        }
+        setLoading(false);
+        document.getElementById('submit-btn').disabled = false;
+    };
+
+    // Boot
+    loadDashboard();
+</script>
+</body>
+</html>
