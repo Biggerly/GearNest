@@ -694,6 +694,30 @@
         setLoading(false);
     };
 
+    async function bulkUploadProducts(productsArray) {
+    const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+    const db = window.db; // uses your already initialized firestore
+
+    if (!db) {
+        console.error("Firestore not found");
+        return;
+    }
+
+    for (const product of productsArray) {
+        await addDoc(collection(db, "products"), {
+            name: product.name || '',
+            category: product.category || 'Other',
+            price: product.price || '',
+            images: product.images || [],
+            specs: product.specs || {},
+            createdAt: serverTimestamp()
+        });
+    }
+
+    console.log("Bulk upload done ✅");
+}
+
     // ---- Add product ----
     window.addSpecRow = () => {
         const row = document.createElement('div');
