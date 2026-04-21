@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gearnest | Premium Tech Reviews</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        @media (max-width: 640px) {
+            .detail-content { font-size: 0.85rem; }
+            .detail-title { font-size: 1.5rem !important; }
+            .detail-price { font-size: 1.25rem !important; }
+            .detail-image { height: 200px !important; }
+        }
+
+        .gallery-thumb.active { border-color: #3b82f6; border-width: 2px; }
+        
+        .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease-out; }
+        .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
+
+        .detail-content {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @media (max-width: 380px) {
+            .grid-cols-2 { gap: 0.5rem !important; }
+            h2 { font-size: 1rem !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 font-sans">
+    <div id="app">
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="container mx-auto px-4 py-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h1 class="text-2xl font-black text-blue-700 tracking-tighter">GEARNEST</h1>
+                    <button @click="toggleCompareMode" 
+                            :class="compareMode ? 'bg-red-500' : 'bg-blue-600'" 
+                            class="text-white px-5 py-2 rounded-full text-xs font-bold shadow-md uppercase tracking-widest transition-all">
+                        {{ compareMode ? 'Exit' : 'Compare' }}
+                    </button>
+                </div>
+
+                <div class="space-y-3">
+                    <div class="relative group">
+                        <span class="absolute left-3 top-2.5 text-slate-400">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </span>
+                        <input v-model="searchQuery" type="text" placeholder="Search devices..." 
+                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white transition-all">
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                        <button v-for="cat in categories" @click="activeFilter = cat"
+                                :class="activeFilter === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'"
+                                class="px-5 py-1.5 rounded-full border whitespace-nowrap text-xs font-bold transition-all shadow-sm">
+                            {{ cat }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container mx-auto p-4">
+
+            <!-- Loading State -->
+            <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
+                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Loading devices...</p>
+            </div>
+
+            <!-- Error State -->
+            <div v-else-if="error" class="flex flex-col items-center justify-center py-24 gap-3">
+                <i data-lucide="wifi-off" class="w-10 h-10 text-red-400"></i>
+                <p class="text-slate-500 text-sm font-bold">Failed to load products</p>
+                <button @click="fetchDevices" class="mt-2 px-6 py-2 bg-blue-600 text-white rounded-full text-xs font-bold">Retry</button>
+            </div>
+
+            <!-- Empty State -->
+            <div v-else-if="filteredDevices.length === 0" class="flex flex-col items-center justify-center py-24 gap-3">
+                <i data-lucide="package-x" class="w-10 h-10 text-slate-300"></i>
+                <p class="text-slate-400 text-sm font-bold">No devices found</p>
+            </div>
+
+            <!-- Compare Tray -->
+            <div v-if="compareMode && compareSelection.length > 0" 
+                 class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md bg-slate-900/95 backdrop-blur-lg text-white p-4 rounded-3xl shadow-2xl flex justify-between items-center border border-white/10 transition-all duration-500">
+                <div class="flex items-center gap-4">
+                    <div class="flex -space-x-3">
+                        <div v-for="item in compareSelection" :key="item.id" class="w-10 h-10 rounded-full border-2 border-slate-900 bg-white overflow-hidden">
+                            <img :src="item.images[0]" class="w-full h-full object-contain">
+                        </div>
+                    </div>
+                    <span class="text-xs font-black uppercase tracking-widest">{{ compareSelection.length }} / 2 Picked</span>
+                </div>
+                <button v-if="compareSelection.length === 2" @click="showCompareResult = true" 
+                        class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-tighter shadow-lg transition-all active:scale-95">
+                    Compare
+                </button>
+            </div>
+
+            <!-- Battleground Modal -->
+            <transition name="slide-up">
+                <div v-if="showCompareResult" class="fixed inset-0 z-[120] bg-slate-50 overflow-y-auto">
+                    <nav class="sticky top-0 bg-white/80 backdrop-blur-md border-b px-6 py-4 flex justify-between items-center z-10">
+                        <button @click="showCompareResult = false" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                            <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                        </button>
+                        <h2 class="font-black text-lg tracking-tighter italic">BATTLEGROUND</h2>
+                        <div class="w-10"></div>
+                    </nav>
+
+                    <div class="container mx-auto max-w-2xl px-4 py-8">
+                        <div class="grid grid-cols-2 gap-3 md:gap-6 mb-12">
+                            <div v-for="(item, index) in compareSelection" :key="item.id" 
+                                 class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
+                                <div v-if="isWinner(item)" class="absolute top-0 right-0 bg-yellow-400 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-tighter">Winner</div>
+                                <img :src="item.images[0]" class="h-24 md:h-40 mx-auto object-contain mb-4 drop-shadow-xl">
+                                <p class="font-black text-xs md:text-sm leading-tight text-slate-800">{{ item.name }}</p>
+                            </div>
+                        </div>
+
+                        <div v-if="compareSelection.length === 2" class="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
+                            <div v-for="(val, key) in compareSelection[0].specs" :key="key" class="border-b border-slate-50 p-5 md:p-6">
+                                <p class="text-[10px] font-black uppercase text-blue-500 mb-3 text-center tracking-[0.2em]">{{ key }}</p>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="text-center font-bold text-sm md:text-base px-2 border-r border-slate-100">{{ compareSelection[0].specs[key] }}</div>
+                                    <div class="text-center font-bold text-sm md:text-base px-2">{{ compareSelection[1].specs[key] }}</div>
+                                </div>
+                            </div>
+
+                            <div class="bg-slate-900 text-white p-6 md:p-8">
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 text-center tracking-[0.2em]">Investment</p>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="text-center">
+                                        <p class="font-black text-lg md:text-2xl">₦{{ compareSelection[0].price }}</p>
+                                        <span v-if="parsePrice(compareSelection[0].price) < parsePrice(compareSelection[1].price)" class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Better Deal</span>
+                                    </div>
+                                    <div class="text-center border-l border-white/10">
+                                        <p class="font-black text-lg md:text-2xl">₦{{ compareSelection[1].price }}</p>
+                                        <span v-if="parsePrice(compareSelection[1].price) < parsePrice(compareSelection[0].price)" class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Better Deal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button @click="showCompareResult = false" class="w-full mt-8 py-4 bg-slate-200 text-slate-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-300 transition-all">
+                            Close Comparison
+                        </button>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Product Grid -->
+            <div v-if="!loading && !error" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                <div v-for="item in filteredDevices" :key="item.id" 
+                     class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                    <div class="relative aspect-square bg-slate-50 flex items-center justify-center p-4">
+                        <img :src="item.images[0]" class="max-h-full object-contain group-hover:scale-105 transition-transform duration-500">
+                        <div v-if="compareMode" class="absolute top-3 right-3">
+                            <input type="checkbox" :value="item" v-model="compareSelection" :disabled="compareSelection.length >= 2 && !compareSelection.includes(item)" 
+                                   class="w-6 h-6 rounded-full border-2 border-blue-500 cursor-pointer">
+                        </div>
+                    </div>
+                    <div class="p-4 flex flex-col h-full">
+                        <h3 class="font-bold text-sm text-slate-800 leading-tight h-10 overflow-hidden">{{ item.name }}</h3>
+                        <p class="text-lg font-black text-slate-900 mt-2">₦{{ item.price }}</p>
+                        <button @click="openDetails(item)" class="mt-4 w-full border border-slate-200 py-2 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Device Detail Modal -->
+        <transition name="slide-up">
+            <div v-if="selectedDevice" class="fixed inset-0 z-[100] bg-white overflow-y-auto detail-content">
+                <nav class="sticky top-0 bg-white/90 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center z-10">
+                    <button @click="closeDetails" class="p-2 hover:bg-slate-100 rounded-full">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                    <span class="font-bold text-xs uppercase tracking-widest text-slate-500">Device Specs</span>
+                    <div class="w-10"></div>
+                </nav>
+
+                <div class="container mx-auto max-w-4xl px-4 py-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="detail-image h-64 md:h-80 bg-slate-50 rounded-2xl flex items-center justify-center p-6 border border-slate-100">
+                                <img :src="activeImage" class="max-h-full object-contain">
+                            </div>
+                            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                <button v-for="img in selectedDevice.images" :key="img" @click="activeImage = img"
+                                        :class="{'ring-2 ring-blue-600 opacity-100': activeImage === img, 'opacity-50': activeImage !== img}"
+                                        class="w-16 h-16 flex-shrink-0 bg-white border border-slate-200 rounded-lg p-1 transition-all">
+                                    <img :src="img" class="w-full h-full object-contain">
+                                </button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{{ selectedDevice.category }}</span>
+                            <h1 class="detail-title text-3xl font-black text-slate-900 mb-2">{{ selectedDevice.name }}</h1>
+                            <p class="detail-price text-2xl font-bold text-slate-900 mb-6">₦{{ selectedDevice.price }}</p>
+                            
+                            <h3 class="text-[11px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
+                                <i data-lucide="info" class="w-3 h-3"></i> Core Specifications
+                            </h3>
+                            <div class="space-y-2 mb-8">
+                                <div v-for="(val, key) in selectedDevice.specs" class="flex justify-between p-2 bg-slate-50 rounded-lg text-sm">
+                                    <span class="text-slate-500 capitalize">{{ key }}</span>
+                                    <span class="font-bold text-slate-800">{{ val }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mt-12 pt-8 border-t">
+                        <h3 class="font-black text-lg text-slate-900 mb-6">Related Devices</h3>
+                        <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                            <div v-for="related in getRelated(selectedDevice)" :key="related.id" 
+                                 @click="openDetails(related)"
+                                 class="w-40 flex-shrink-0 cursor-pointer group">
+                                <div class="aspect-square bg-slate-50 rounded-xl p-3 mb-2 flex items-center justify-center border border-slate-100 group-hover:border-blue-200 transition-all">
+                                    <img :src="related.images[0]" class="max-h-full object-contain">
+                                </div>
+                                <p class="text-xs font-bold text-slate-800 truncate">{{ related.name }}</p>
+                                <p class="text-xs text-blue-600 font-bold">₦{{ related.price }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+        <!-- WhatsApp Button -->
+        <a href="https://wa.me/2349132720329" target="_blank" 
+           class="fixed bottom-6 right-6 bg-green-500 text-white p-3.5 rounded-full shadow-2xl z-50 hover:scale-110 active:scale-95 transition-all">
+           <i data-lucide="message-circle" class="w-6 h-6"></i>
+        </a>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, setDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtj7-YA1S8FlWS6MCNwGUezEuXnkdj84U",
+            authDomain: "gearnested.firebaseapp.com",
+            projectId: "gearnested",
+            storageBucket: "gearnested.firebasestorage.app",
+            messagingSenderId: "114468029326",
+            appId: "1:114468029326:web:be9cb0c5bca48ce54bdadf",
+            measurementId: "G-YLHL3PXKQP"
+        };
+
+        const firebaseApp = initializeApp(firebaseConfig);
+        const db = getFirestore(firebaseApp);
+
+        // --- Traffic Tracking ---
+        const trackPageView = async () => {
+            try {
+                const today = new Date().toISOString().split('T')[0]; // e.g. "2025-04-21"
+                await setDoc(doc(db, "traffic", today), {
+                    date: today,
+                    pageViews: increment(1),
+                    lastSeen: serverTimestamp()
+                }, { merge: true });
+
+                // Total all-time counter
+                await setDoc(doc(db, "traffic", "__total__"), {
+                    pageViews: increment(1),
+                    visitors: increment(1)
+                }, { merge: true });
+            } catch (e) {
+                console.warn("Traffic tracking failed:", e);
+            }
+        };
+
+        const trackProductView = async (productId, productName) => {
+            try {
+                await setDoc(doc(db, "productViews", productId), {
+                    productId,
+                    name: productName,
+                    views: increment(1),
+                    lastViewed: serverTimestamp()
+                }, { merge: true });
+            } catch (e) {
+                console.warn("Product view tracking failed:", e);
+            }
+        };
+
+        createApp({
+            setup() {
+                const devices = ref([]);
+                const searchQuery = ref("");
+                const activeFilter = ref("All");
+                const selectedDevice = ref(null);
+                const activeImage = ref("");
+                const compareMode = ref(false);
+                const compareSelection = ref([]);
+                const showCompareResult = ref(false);
+                const loading = ref(true);
+                const error = ref(false);
+                const categories = ["All", "Phones", "Laptops", "Tablets"];
+
+                const refreshIcons = () => {
+                    nextTick(() => { if (window.lucide) window.lucide.createIcons(); });
+                };
+
+                const fetchDevices = async () => {
+                    loading.value = true;
+                    error.value = false;
+                    try {
+                        const snapshot = await getDocs(collection(db, "products"));
+                        devices.value = snapshot.docs.map(doc => ({
+                            id: doc.id,
+                            ...doc.data()
+                        }));
+                    } catch (err) {
+                        console.error("Firestore error:", err);
+                        error.value = true;
+                    } finally {
+                        loading.value = false;
+                        refreshIcons();
+                    }
+                };
+
+                const filteredDevices = computed(() => {
+                    return devices.value.filter(d => {
+                        const s = searchQuery.value.toLowerCase();
+                        return (activeFilter.value === "All" || d.category === activeFilter.value) && d.name.toLowerCase().includes(s);
+                    });
+                });
+
+                const openDetails = (device) => {
+                    selectedDevice.value = device;
+                    activeImage.value = device.images[0];
+                    document.body.style.overflow = 'hidden';
+                    trackProductView(device.id, device.name);
+                    refreshIcons();
+                };
+
+                const closeDetails = () => {
+                    selectedDevice.value = null;
+                    document.body.style.overflow = 'auto';
+                };
+
+                const getRelated = (current) => {
+                    return devices.value.filter(d => d.category === current.category && d.id !== current.id);
+                };
+
+                const toggleCompareMode = () => {
+                    compareMode.value = !compareMode.value;
+                    if (!compareMode.value) compareSelection.value = [];
+                    refreshIcons();
+                };
+
+                onMounted(() => {
+                    fetchDevices();
+                    trackPageView();
+                });
+
+                return {
+                    devices,
+                    searchQuery,
+                    activeFilter,
+                    categories,
+                    filteredDevices,
+                    selectedDevice,
+                    activeImage,
+                    compareMode,
+                    compareSelection,
+                    showCompareResult,
+                    loading,
+                    error,
+                    fetchDevices,
+                    openDetails,
+                    closeDetails,
+                    getRelated,
+                    toggleCompareMode,
+                    parsePrice: (priceStr) => parseInt(String(priceStr).replace(/,/g, '')),
+                    isWinner: (item) => {
+                        if (compareSelection.value.length < 2) return false;
+                        const other = compareSelection.value.find(d => d.id !== item.id);
+                        if (!other) return false;
+                        const price1 = parseInt(String(item.price).replace(/,/g, ''));
+                        const price2 = parseInt(String(other.price).replace(/,/g, ''));
+                        return price1 < price2;
+                    }
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
