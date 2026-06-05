@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GearNest — Bulk Product Seeder</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#e2e8f0;font-family:'DM Mono',monospace;padding:24px;min-height:100vh}
+h1{font-family:'Space Grotesk',sans-serif;font-size:1.6rem;font-weight:800;color:#60a5fa;margin-bottom:4px}
+.sub{color:#475569;font-size:0.75rem;margin-bottom:24px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:16px;padding:20px;margin-bottom:16px}
+.stat{display:inline-flex;flex-direction:column;align-items:center;background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:12px 20px;min-width:90px}
+.stat-val{font-size:1.8rem;font-weight:700;color:#34d399}
+.stat-label{font-size:0.65rem;color:#64748b;text-transform:uppercase;letter-spacing:.1em;margin-top:2px}
+.stats-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+button{background:#2563eb;color:#fff;border:none;padding:10px 24px;border-radius:10px;font-family:'DM Mono',monospace;font-size:0.85rem;font-weight:500;cursor:pointer;transition:background .2s}
+button:hover{background:#1d4ed8}
+button:disabled{background:#334155;color:#64748b;cursor:not-allowed}
+button.danger{background:#dc2626}
+button.danger:hover{background:#b91c1c}
+button.success{background:#16a34a}
+#log{background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:16px;font-size:0.75rem;line-height:1.7;max-height:280px;overflow-y:auto;color:#94a3b8}
+.ok{color:#34d399}.err{color:#f87171}.info{color:#60a5fa}.warn{color:#fbbf24}
+.progress{height:6px;background:#1e293b;border-radius:99px;margin:12px 0;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,#2563eb,#60a5fa);border-radius:99px;transition:width .3s ease}
+select,input{background:#0f172a;border:1px solid #334155;color:#e2e8f0;padding:8px 12px;border-radius:8px;font-family:'DM Mono',monospace;font-size:0.8rem;width:100%;margin-top:6px}
+label{font-size:0.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.08em}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:500px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<h1>⚡ GearNest Product Seeder</h1>
+<p class="sub">Bulk-push all 45 products to Firestore · Use once to seed your database</p>
+
+<div class="stats-row">
+    <div class="stat"><span class="stat-val" id="total-count">45</span><span class="stat-label">Products</span></div>
+    <div class="stat"><span class="stat-val" id="pushed-count">0</span><span class="stat-label">Pushed</span></div>
+    <div class="stat"><span class="stat-val" id="fail-count">0</span><span class="stat-label">Errors</span></div>
+</div>
+
+<div class="card">
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-bottom:16px">
+        <button id="btn-seed" onclick="seedAll()">🚀 Seed All 45 Products</button>
+        <button class="danger" onclick="clearAll()">🗑️ Clear All Products</button>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+    <div id="log"><span class="info">// Ready. Click "Seed All" to push products to Firestore.</span></div>
+</div>
+
+<div class="card" style="font-size:0.72rem;color:#64748b;">
+    <strong style="color:#94a3b8">ℹ️ Notes:</strong><br><br>
+    • Products use publicly available product image URLs (CDN-hosted, no auth required)<br>
+    • All prices are in Nigerian Naira (₦)<br>
+    • Run this once — re-running will overwrite existing docs with the same ID<br>
+    • Open browser DevTools console for detailed Firebase logs if issues arise
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, collection, getDocs, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyCtj7-YA1S8FlWS6MCNwGUezEuXnkdj84U",
+    authDomain: "gearnested.firebaseapp.com",
+    projectId: "gearnested",
+    storageBucket: "gearnested.firebasestorage.app",
+    messagingSenderId: "114468029326",
+    appId: "1:114468029326:web:be9cb0c5bca48ce54bdadf"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const PRODUCTS = [
+  // ── PHONES ────────────────────────────────────────────────────────────────
+  { id:"samsung-s24-ultra", name:"Samsung Galaxy S24 Ultra", category:"Phones", price:"1,250,000",
+    description:"Samsung's flagship powerhouse with a 200MP camera, built-in S Pen, and titanium frame. The benchmark for Android photography in 2024.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/2401/gallery/levant-galaxy-s24-ultra-s928-sm-s928bztgmea-thumb-539573051?$650_519_PNG$"],
+    specs:{"Display":"6.8\" QHD+ 120Hz AMOLED","Processor":"Snapdragon 8 Gen 3","RAM":"12GB","Storage":"256GB / 512GB / 1TB","Battery":"5000mAh","Camera":"200MP + 12MP + 10MP + 50MP","OS":"Android 14","Network":"5G"} },
+  { id:"iphone-15-pro-max", name:"Apple iPhone 15 Pro Max", category:"Phones", price:"1,450,000",
+    description:"Apple's most powerful iPhone with A17 Pro chip, titanium design, and the best iPhone camera system ever made.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-7inch-naturaltitanium?wid=5120&hei=2880&fmt=p-jpg&qlt=80&.v=1692845702708"],
+    specs:{"Display":"6.7\" Super Retina XDR ProMotion","Processor":"A17 Pro chip","RAM":"8GB","Storage":"256GB–1TB","Battery":"4422mAh","Camera":"48MP Main + 12MP Ultra-wide + 12MP 5x Telephoto","OS":"iOS 17","Network":"5G"} },
+  { id:"samsung-s24-plus", name:"Samsung Galaxy S24+", category:"Phones", price:"850,000",
+    description:"The sweet spot in Samsung's 2024 lineup — large display, pro-grade camera, and all-day battery.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/2401/gallery/levant-galaxy-s24-s926-sm-s926bzkgmea-thumb-539573051?$650_519_PNG$"],
+    specs:{"Display":"6.7\" QHD+ 120Hz AMOLED","Processor":"Snapdragon 8 Gen 3","RAM":"12GB","Storage":"256GB / 512GB","Battery":"4900mAh","Camera":"50MP + 12MP + 10MP","OS":"Android 14","Network":"5G"} },
+  { id:"pixel-8-pro", name:"Google Pixel 8 Pro", category:"Phones", price:"780,000",
+    description:"Google's cleanest Android experience with AI-powered photography and seven years of OS updates guaranteed.",
+    images:["https://lh3.googleusercontent.com/nu2UNguvWfmjG5Hhi2MSSG1JxO9FnJjHMYgqFU7Ml3pI7kz7iFfBUYHvTIjEBTZb74hh7N_3DaC2YqyCm0uPCb_tGJAW_Eik=rw-e365-w1200"],
+    specs:{"Display":"6.7\" LTPO OLED 120Hz","Processor":"Google Tensor G3","RAM":"12GB","Storage":"128GB / 256GB / 1TB","Battery":"5050mAh","Camera":"50MP + 48MP + 48MP","OS":"Android 14","Network":"5G"} },
+  { id:"tecno-phantom-v-fold", name:"Tecno Phantom V Fold", category:"Phones", price:"520,000",
+    description:"Africa's first foldable flagship phone from Tecno. An impressive 7.85\" inner display unfolds to deliver tablet-like productivity.",
+    images:["https://www.tecno-mobile.com/medias/phantom-v-fold-storage-black-400-400.png?context=bWFzdGVyfHJvb3R8MzU4Njd8aW1hZ2UvcG5nfGgzZC9oZmEvOTQ0MTU2ODcxNDc4Mi9waGFudG9tLXYtZm9sZC1zdG9yYWdlLWJsYWNrLTQwMC00MDAucG5nfGZkM2RiNDUzMDA1NGNiZTUyMjgwMDkzMDVmNTlhYzZlZWY0ZmZlZjI3NDM5MzJlZGVhODllNGEyNzFiYWM0ZWI"],
+    specs:{"Display":"7.85\" inner / 6.42\" outer AMOLED","Processor":"Dimensity 9000+","RAM":"12GB","Storage":"256GB","Battery":"5000mAh","Camera":"50MP + 13MP + 12MP","OS":"Android 13 (HiOS 13)","Network":"5G"} },
+  { id:"infinix-note-40-pro", name:"Infinix NOTE 40 Pro+", category:"Phones", price:"185,000",
+    description:"Incredible value — 108MP camera, 100W wired + wireless charging, and a massive 5000mAh battery for under ₦200k.",
+    images:["https://www.infinixmobility.com/media/catalog/product/n/o/note40pro-plus-volcanic-grey-m.png"],
+    specs:{"Display":"6.78\" AMOLED 144Hz","Processor":"Helio G99 Ultimate","RAM":"12GB","Storage":"256GB","Battery":"5000mAh + 100W Fast Charge","Camera":"108MP + 13MP + 2MP","OS":"Android 14 (XOS 14)","Network":"4G LTE"} },
+  { id:"tecno-camon-20-pro", name:"Tecno CAMON 20 Pro 5G", category:"Phones", price:"210,000",
+    description:"Tecno's photography flagship with a stunning 64MP RGBW camera system and bright 120Hz AMOLED display.",
+    images:["https://www.tecno-mobile.com/medias/camon-20-pro-5g-serenity-blue-400-400.png?context=bWFzdGVyfHJvb3R8Mjg3NTZ8aW1hZ2UvcG5nfGhkOC9oZDUvOTU2ODUxMjQxMjk2MC9jYW1vbi0yMC1wcm8tNWctc2VyZW5pdHktYmx1ZS00MDAtNDAwLnBuZ3w1N2Q4NGJlYzFlMWEzOWZkNGYzMjY1ZTBiMGI3MjVhMzY4Mzg5NTAxMzQ0YzljMDQ3MDIxOWZiYTMzNjZhMWEw"],
+    specs:{"Display":"6.67\" AMOLED 120Hz","Processor":"Dimensity 8050","RAM":"8GB","Storage":"256GB","Battery":"5000mAh","Camera":"64MP RGBW + 13MP + 2MP","OS":"Android 13 (HiOS 13)","Network":"5G"} },
+  { id:"redmi-note-13-pro", name:"Xiaomi Redmi Note 13 Pro+", category:"Phones", price:"245,000",
+    description:"Xiaomi's value king with a class-leading 200MP camera, IP68 water resistance, and 120W HyperCharge technology.",
+    images:["https://i01.appmifile.com/v1/MI_18455B3E4DA706226CF7535A58E875F0267D4C9BDBE4C0F2F9AC4E5E7A08B8A0/pocketpages/a4f40a0e6f73c55d6ae50a7f4d65f1e3.png"],
+    specs:{"Display":"6.67\" AMOLED 120Hz","Processor":"Dimensity 7200 Ultra","RAM":"12GB","Storage":"256GB / 512GB","Battery":"5000mAh","Camera":"200MP + 8MP + 2MP","OS":"Android 13 (MIUI 14)","Network":"5G"} },
+  { id:"samsung-a55-5g", name:"Samsung Galaxy A55 5G", category:"Phones", price:"320,000",
+    description:"Samsung's mid-range star with an impressive 50MP OIS camera, Exynos 1480, and 5 years of OS updates.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/sm-a556elbamea/gallery/levant-galaxy-a55-5g-sm-a556elbamea-thumb-539926498?$650_519_PNG$"],
+    specs:{"Display":"6.6\" Super AMOLED 120Hz","Processor":"Exynos 1480","RAM":"8GB","Storage":"128GB / 256GB","Battery":"5000mAh","Camera":"50MP OIS + 12MP + 5MP","OS":"Android 14","Network":"5G"} },
+  { id:"iphone-14", name:"Apple iPhone 14", category:"Phones", price:"680,000",
+    description:"Rock-solid iPhone 14 with Crash Detection, Emergency SOS via satellite, and Action Mode video stabilization.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-14-finish-select-202209-6-1inch-midnight?wid=5120&hei=2880&fmt=p-jpg&qlt=80&.v=1663703841896"],
+    specs:{"Display":"6.1\" Super Retina XDR OLED","Processor":"A15 Bionic","RAM":"6GB","Storage":"128GB / 256GB / 512GB","Battery":"3279mAh","Camera":"12MP Main + 12MP Ultra-wide","OS":"iOS 17","Network":"5G"} },
+  { id:"oppo-reno11-pro", name:"OPPO Reno11 Pro 5G", category:"Phones", price:"285,000",
+    description:"Designed for selfie lovers — a 50MP Sony IMX890 main sensor and 50MP portrait telephoto make this a social media powerhouse.",
+    images:["https://image.oppo.com/content/dam/oppo/product-asset-library/reno/reno11-pro/v1/assets/reno11pro-kv-img.png"],
+    specs:{"Display":"6.7\" AMOLED 120Hz","Processor":"Dimensity 8200","RAM":"12GB","Storage":"256GB","Battery":"4600mAh","Camera":"50MP + 32MP + 50MP Portrait","OS":"Android 14 (ColorOS 14)","Network":"5G"} },
+  { id:"vivo-v30-pro", name:"Vivo V30 Pro 5G", category:"Phones", price:"270,000",
+    description:"Co-engineered with Zeiss optics, the Vivo V30 Pro delivers exceptional portrait photography with aura light portrait mode.",
+    images:["https://www.vivo.com/content/dam/vivo/en/products/v-series/v30pro/assets/header-image.png"],
+    specs:{"Display":"6.78\" AMOLED 120Hz","Processor":"Snapdragon 8s Gen 3","RAM":"12GB","Storage":"256GB","Battery":"5000mAh","Camera":"50MP Zeiss + 50MP AF + 50MP Tele","OS":"Android 14 (FunTouchOS 14)","Network":"5G"} },
+  { id:"oneplus-12r", name:"OnePlus 12R 5G", category:"Phones", price:"310,000",
+    description:"Blazing-fast Snapdragon 8 Gen 1 with 100W SUPERVOOC charging that goes from 0 to 100% in under 30 minutes.",
+    images:["https://oasis.opstatics.com/content/dam/oasis/page/2024/na/oneplus-12r/green/heroimage/12r-green-mobile.png"],
+    specs:{"Display":"6.78\" ProXDR AMOLED 120Hz","Processor":"Snapdragon 8 Gen 1","RAM":"8GB / 16GB","Storage":"128GB / 256GB","Battery":"5500mAh","Camera":"50MP + 8MP + 2MP","OS":"Android 14 (OxygenOS 14)","Network":"5G"} },
+  { id:"realme-gt6", name:"Realme GT 6T 5G", category:"Phones", price:"195,000",
+    description:"Snapdragon 7+ Gen 3 at mid-range pricing — exceptional gaming performance with 120W charging.",
+    images:["https://image.realme.com/content/dam/realme/sg/products/gt/gt6t/assets/design/gt6t-blue-mobile.png"],
+    specs:{"Display":"6.78\" AMOLED 144Hz","Processor":"Snapdragon 7+ Gen 3","RAM":"8GB / 12GB","Storage":"256GB","Battery":"5500mAh","Camera":"50MP OIS + 8MP + 2MP","OS":"Android 14 (Realme UI 5.0)","Network":"5G"} },
+  { id:"itel-p55-5g", name:"Itel P55 5G", category:"Phones", price:"89,000",
+    description:"Nigeria's most affordable 5G phone with a 6000mAh jumbo battery that lasts up to 3 days on a single charge.",
+    images:["https://itelworld.com/content/dam/itel/product/mobile/p55-5g/assets/p55-5g-design-mobile.png"],
+    specs:{"Display":"6.6\" IPS LCD 90Hz","Processor":"Dimensity 6080","RAM":"4GB / 6GB","Storage":"128GB","Battery":"6000mAh","Camera":"13MP + 0.3MP","OS":"Android 13","Network":"5G"} },
+
+  // ── LAPTOPS ───────────────────────────────────────────────────────────────
+  { id:"macbook-pro-m3-14", name:"Apple MacBook Pro 14\" M3", category:"Laptops", price:"1,850,000",
+    description:"The world's most powerful laptop for its size — M3 chip delivers unprecedented performance for developers, editors, and creators.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mbp14-spacegray-select-202310?wid=904&hei=840&fmt=jpeg&qlt=90&.v=1697311054290"],
+    specs:{"Display":"14.2\" Liquid Retina XDR","Processor":"Apple M3 (8-core CPU)","RAM":"8GB / 16GB / 24GB unified","Storage":"512GB / 1TB / 2TB SSD","Battery":"Up to 18 hours","GPU":"10-core GPU","OS":"macOS Sonoma","Weight":"1.55 kg"} },
+  { id:"dell-xps-15", name:"Dell XPS 15 (2024)", category:"Laptops", price:"1,350,000",
+    description:"Dell's flagship 15-inch powerhouse with OLED display, Intel Core Ultra, and RTX 4060 in a premium aluminium chassis.",
+    images:["https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/xps-notebooks/xps-15-9530/media-gallery/gray/notebook-xps-15-9530-gray-gallery-5.psd?fmt=pjpg&pscan=auto&scl=1&hei=402&wid=402&qlt=100,1&resMode=sharp2&size=402,402"],
+    specs:{"Display":"15.6\" 3.5K OLED 60Hz","Processor":"Intel Core Ultra 9 185H","RAM":"16GB / 32GB DDR5","Storage":"512GB / 1TB SSD","Battery":"86WHr","GPU":"NVIDIA RTX 4060 8GB","OS":"Windows 11 Pro","Weight":"1.86 kg"} },
+  { id:"hp-spectre-x360", name:"HP Spectre x360 14", category:"Laptops", price:"1,100,000",
+    description:"HP's premium 2-in-1 laptop with gem-cut design, OLED touchscreen, and Intel Core Ultra for both work and creativity.",
+    images:["https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/images/c08695890.png"],
+    specs:{"Display":"14\" 2.8K OLED Touch 120Hz","Processor":"Intel Core Ultra 7 155H","RAM":"16GB / 32GB LPDDR5","Storage":"1TB / 2TB SSD","Battery":"66WHr","GPU":"Intel Arc","OS":"Windows 11 Home","Weight":"1.46 kg"} },
+  { id:"lenovo-thinkpad-x1-carbon", name:"Lenovo ThinkPad X1 Carbon Gen 12", category:"Laptops", price:"1,480,000",
+    description:"The ultimate business ultrabook — featherlight at 1.12 kg with MIL-SPEC durability, excellent keyboard, and top-tier security.",
+    images:["https://p3-ofp.static.pub//fes/cms/2024/02/28/n1t0qk0qd3ley7bfxqavgzno2s6vyx282781.png"],
+    specs:{"Display":"14\" 2.8K IPS Anti-glare","Processor":"Intel Core Ultra 7 165U","RAM":"16GB / 32GB LPDDR5X","Storage":"512GB / 1TB / 2TB SSD","Battery":"57WHr","GPU":"Intel Graphics","OS":"Windows 11 Pro","Weight":"1.12 kg"} },
+  { id:"asus-zenbook-pro-14", name:"ASUS ZenBook Pro 14 OLED", category:"Laptops", price:"980,000",
+    description:"Creative pro laptop with a 2.8K 120Hz OLED display, Core i9, and dedicated RTX 4060 in a slim 1.65 kg chassis.",
+    images:["https://dlcdnwebimgs.asus.com/gain/C6ABCFEF-9B3D-4F9C-A20A-3F7E2B12D9F2/w1000/h732"],
+    specs:{"Display":"14.5\" 2.8K OLED 120Hz Touch","Processor":"Intel Core i9-13900H","RAM":"16GB DDR5","Storage":"1TB SSD","Battery":"76WHr","GPU":"NVIDIA RTX 4060 8GB","OS":"Windows 11 Pro","Weight":"1.65 kg"} },
+  { id:"macbook-air-m2", name:"Apple MacBook Air 13\" M2", category:"Laptops", price:"1,050,000",
+    description:"Fanless, lightweight perfection. The M2 MacBook Air offers extraordinary performance and up to 18 hours of battery life.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/mba13-midnight-select-202206?wid=904&hei=840&fmt=jpeg&qlt=90&.v=1664497359433"],
+    specs:{"Display":"13.6\" Liquid Retina","Processor":"Apple M2 (8-core CPU)","RAM":"8GB / 16GB / 24GB","Storage":"256GB / 512GB / 1TB / 2TB SSD","Battery":"Up to 18 hours","GPU":"8-core / 10-core GPU","OS":"macOS Sonoma","Weight":"1.24 kg"} },
+  { id:"hp-pavilion-15", name:"HP Pavilion 15 (2024)", category:"Laptops", price:"420,000",
+    description:"Reliable everyday laptop with AMD Ryzen 7 for fast multi-tasking and a bright FHD display. Great value for students and office workers.",
+    images:["https://ssl-product-images.www8-hp.com/digmedialib/prodimg/knowledgebase/images/c08654089.png"],
+    specs:{"Display":"15.6\" FHD IPS 250 nits","Processor":"AMD Ryzen 7 7730U","RAM":"16GB DDR4","Storage":"512GB SSD","Battery":"41WHr","GPU":"AMD Radeon Graphics","OS":"Windows 11 Home","Weight":"1.75 kg"} },
+  { id:"lenovo-ideapad-gaming-3", name:"Lenovo IdeaPad Gaming 3i Gen 8", category:"Laptops", price:"620,000",
+    description:"Budget gaming laptop that punches above its weight — RTX 3050 and 144Hz display for immersive gaming sessions.",
+    images:["https://p3-ofp.static.pub//fes/cms/2023/04/10/j9vvs6ik57g7g7mblvxin1e1e85k7w476073.png"],
+    specs:{"Display":"15.6\" FHD IPS 144Hz","Processor":"Intel Core i5-12450H","RAM":"8GB / 16GB DDR5","Storage":"512GB SSD","Battery":"45WHr","GPU":"NVIDIA RTX 3050 4GB","OS":"Windows 11 Home","Weight":"2.2 kg"} },
+  { id:"asus-vivobook-pro-16", name:"ASUS VivoBook Pro 16X OLED", category:"Laptops", price:"890,000",
+    description:"Massive OLED screen for content creators needing colour-accurate work on a portable machine.",
+    images:["https://dlcdnwebimgs.asus.com/gain/A08B4C00-E02E-4A29-8F28-E5D5C6F0B57A/w1000/h732"],
+    specs:{"Display":"16\" 3.2K OLED 120Hz","Processor":"Intel Core i9-13980HX","RAM":"32GB DDR5","Storage":"1TB SSD","Battery":"96WHr","GPU":"NVIDIA RTX 4060 8GB","OS":"Windows 11 Pro","Weight":"2.0 kg"} },
+  { id:"dell-inspiron-15", name:"Dell Inspiron 15 3000", category:"Laptops", price:"310,000",
+    description:"Nigeria's go-to budget laptop — dependable performance for school, office documents, and basic media consumption.",
+    images:["https://i.dell.com/is/image/DellContent/content/dam/ss2/product-images/dell-client-products/notebooks/inspiron-notebooks/15-3520/media-gallery/black/notebook-inspiron-15-3520-black-gallery-5.psd?fmt=pjpg&pscan=auto&scl=1&hei=402&wid=402"],
+    specs:{"Display":"15.6\" FHD IPS 120Hz","Processor":"Intel Core i3-1215U","RAM":"8GB DDR4","Storage":"256GB SSD","Battery":"41WHr","GPU":"Intel UHD Graphics","OS":"Windows 11 Home","Weight":"1.71 kg"} },
+  { id:"microsoft-surface-pro-10", name:"Microsoft Surface Pro 10", category:"Laptops", price:"1,180,000",
+    description:"The definitive 2-in-1 tablet/laptop with Copilot+ AI, Intel Core Ultra, and NPU for on-device AI tasks.",
+    images:["https://img-prod-cms-rt-microsoft-com.akamaized.net/cms/api/am/imageFileData/RW1lVmu?ver=2b15"],
+    specs:{"Display":"13\" PixelSense Flow Touch 120Hz","Processor":"Intel Core Ultra 5 / 7","RAM":"16GB / 32GB","Storage":"256GB / 512GB / 1TB SSD","Battery":"Up to 14 hours","GPU":"Intel Arc","OS":"Windows 11 Pro","Weight":"879 g (tablet only)"} },
+  { id:"acer-swift-go-14", name:"Acer Swift Go 14", category:"Laptops", price:"550,000",
+    description:"Ultra-slim Copilot+ laptop with OLED display, 17-hour battery, and AMD Ryzen AI 9 for outstanding everyday performance.",
+    images:["https://static.acer.com/up/Resource/Acer/Laptops/Swift_Go/Specifications/20240105/SFG14-73-sg-pure-silver-04.png"],
+    specs:{"Display":"14\" 2.8K OLED 120Hz","Processor":"AMD Ryzen AI 9 365","RAM":"16GB / 32GB LPDDR5X","Storage":"1TB SSD","Battery":"65WHr","GPU":"AMD Radeon 890M","OS":"Windows 11 Home","Weight":"1.35 kg"} },
+
+  // ── TABLETS ───────────────────────────────────────────────────────────────
+  { id:"ipad-pro-m4-13", name:"Apple iPad Pro 13\" M4", category:"Tablets", price:"1,320,000",
+    description:"Apple's thinnest product ever at 5.1mm — the M4 chip and Ultra Retina XDR OLED display redefine what a tablet can do.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/ipad-pro-finish-select-gallery-202405-13inch-silver-wifi?wid=5120&hei=4280&fmt=p-jpg&qlt=95&.v=1713920820557"],
+    specs:{"Display":"13\" Ultra Retina XDR OLED","Processor":"Apple M4 (9-core CPU)","RAM":"8GB / 16GB unified","Storage":"256GB–2TB","Battery":"Up to 10 hours","Camera":"12MP Wide + 12MP Ultra-Wide","OS":"iPadOS 17","Connectivity":"Wi-Fi 6E + optional 5G"} },
+  { id:"samsung-galaxy-tab-s9-ultra", name:"Samsung Galaxy Tab S9 Ultra", category:"Tablets", price:"880,000",
+    description:"Samsung's massive 14.6\" AMOLED tablet with S Pen included — a desktop-class experience in portable form.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/sm-x910nzaaxfe/gallery/levant-galaxy-tab-s9-ultra-sm-x910nzaaxfe-thumb-539573051?$650_519_PNG$"],
+    specs:{"Display":"14.6\" Dynamic AMOLED 120Hz","Processor":"Snapdragon 8 Gen 2","RAM":"12GB","Storage":"256GB / 512GB","Battery":"11200mAh","Camera":"13MP + 6MP","OS":"Android 13 (One UI 5.1)","S Pen":"Included"} },
+  { id:"ipad-air-m2", name:"Apple iPad Air 13\" M2", category:"Tablets", price:"780,000",
+    description:"The new larger iPad Air with M2 chip offers pro-level performance and the new Apple Pencil Pro support for creatives.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/ipad-air-select-202405-13inch-blue?wid=940&hei=1112&fmt=png-alpha&.v=1713920823596"],
+    specs:{"Display":"13\" Liquid Retina","Processor":"Apple M2","RAM":"8GB","Storage":"128GB–1TB","Battery":"Up to 10 hours","Camera":"12MP Wide","OS":"iPadOS 17","Connectivity":"Wi-Fi 6E + optional 5G"} },
+  { id:"samsung-galaxy-tab-a9-plus", name:"Samsung Galaxy Tab A9+", category:"Tablets", price:"185,000",
+    description:"Best-value large-screen tablet in Nigeria — 11\" display, Snapdragon 695, and Dolby Atmos quad speakers.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/sm-x210nzaaxfe/gallery/levant-galaxy-tab-a9plus-sm-x210nzaaxfe-thumb-539573051?$650_519_PNG$"],
+    specs:{"Display":"11\" TFT LCD 90Hz","Processor":"Snapdragon 695","RAM":"4GB / 8GB","Storage":"64GB / 128GB","Battery":"7040mAh","Camera":"8MP rear","OS":"Android 13 (One UI 5.1)","Connectivity":"Wi-Fi 6 + optional 5G"} },
+  { id:"lenovo-tab-p12-pro", name:"Lenovo Tab P12 Pro", category:"Tablets", price:"380,000",
+    description:"Lenovo's productivity powerhouse with a 12.6\" 2K AMOLED display and optional keyboard case for laptop-replacement productivity.",
+    images:["https://p3-ofp.static.pub//fes/cms/2023/06/08/7sj5ngdvt7jkqj2p5l7zs6ppkqkst3406073.png"],
+    specs:{"Display":"12.6\" 2K AMOLED 120Hz","Processor":"Snapdragon 870","RAM":"8GB / 12GB","Storage":"256GB","Battery":"10200mAh","Camera":"13MP rear","OS":"Android 12","Connectivity":"Wi-Fi 6"} },
+  { id:"ipad-mini-6", name:"Apple iPad mini 6", category:"Tablets", price:"480,000",
+    description:"The most pocketable iPad — USB-C, 5G, and A15 Bionic in a redesigned all-screen compact body.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/ipad-mini-select-202109?wid=940&hei=1112&fmt=png-alpha&.v=1626711098000"],
+    specs:{"Display":"8.3\" Liquid Retina","Processor":"Apple A15 Bionic","RAM":"4GB","Storage":"64GB / 256GB","Battery":"Up to 10 hours","Camera":"12MP Wide + 12MP FaceTime","OS":"iPadOS 17","Connectivity":"Wi-Fi 6 + optional 5G"} },
+  { id:"xiaomi-pad-6", name:"Xiaomi Pad 6", category:"Tablets", price:"195,000",
+    description:"Stunning 144Hz LCD, Snapdragon 870, and four-speaker Dolby Atmos audio for incredible value at the price.",
+    images:["https://i01.appmifile.com/v1/MI_18455B3E4DA706226CF7535A58E875F0267D4C9BDBE4C0F2F9AC4E5E7A08B8A0/pocketpages/a4f40a0e6f73c55d6ae50a7f4d65f1e3.png"],
+    specs:{"Display":"11\" IPS LCD 144Hz","Processor":"Snapdragon 870","RAM":"6GB / 8GB","Storage":"128GB / 256GB","Battery":"8840mAh","Camera":"13MP rear","OS":"Android 13 (MIUI 14)","Connectivity":"Wi-Fi 6"} },
+  { id:"realme-pad-2", name:"Realme Pad 2", category:"Tablets", price:"145,000",
+    description:"Realme's first 11.5\" tablet with a 7050mAh battery and Dolby Atmos quad speakers — productivity and entertainment at low cost.",
+    images:["https://image.realme.com/content/dam/realme/sg/products/tablet/realme-pad2/assets/design/Realme-Pad2-Gray-mobile.png"],
+    specs:{"Display":"11.5\" IPS LCD 120Hz","Processor":"MediaTek Helio G99","RAM":"4GB / 6GB / 8GB","Storage":"128GB / 256GB","Battery":"7050mAh","Camera":"8MP rear","OS":"Android 13 (Realme UI 4.0)","Connectivity":"Wi-Fi 5 + optional LTE"} },
+
+  // ── ACCESSORIES ───────────────────────────────────────────────────────────
+  { id:"airpods-pro-2", name:"Apple AirPods Pro 2nd Gen", category:"Accessories", price:"198,000",
+    description:"Industry-leading active noise cancellation with Adaptive Audio, Conversation Awareness, and H2 chip for spatial audio.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MQD83?wid=2000&hei=2000&fmt=jpeg&qlt=95&.v=1660803972361"],
+    specs:{"Driver":"Custom Apple","ANC":"Adaptive Transparency + ANC","Battery":"30hrs total (case)","Chip":"Apple H2","Water Resistance":"IPX4","Connectivity":"Bluetooth 5.3","Features":"Personalized Spatial Audio, Find My"} },
+  { id:"samsung-galaxy-buds2-pro", name:"Samsung Galaxy Buds2 Pro", category:"Accessories", price:"98,000",
+    description:"Samsung's compact flagship earbuds with Hi-Fi 24-bit audio, intelligent ANC, and seamless Galaxy device switching.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/2208/gallery/levant-galaxy-buds2-pro-sm-r510nzaaxfe-thumb-534252072?$650_519_PNG$"],
+    specs:{"Driver":"11mm two-way","ANC":"Intelligent ANC","Battery":"29hrs total (case)","Audio":"24-bit Hi-Fi","Water Resistance":"IPX7","Connectivity":"Bluetooth 5.3","Features":"360 Audio, Auto Switch"} },
+  { id:"apple-watch-series-9", name:"Apple Watch Series 9", category:"Accessories", price:"320,000",
+    description:"The brightest Apple Watch display ever with the new Double Tap gesture, Siri on-device, and S9 chip.",
+    images:["https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/MR9A3ref_VW_34FR+watch-45-alum-starlight-nc-9s_VW_34FR_WF_CO?wid=700&hei=700&fmt=jpeg&qlt=90&.v=1693416472076"],
+    specs:{"Display":"45mm Always-On Retina LTPO","Processor":"Apple S9 SiP","Battery":"18 hours","Health Sensors":"Blood Oxygen, ECG, Crash Detection","Water Resistance":"50m WR","Connectivity":"GPS, LTE optional","OS":"watchOS 10"} },
+  { id:"samsung-galaxy-watch6-classic", name:"Samsung Galaxy Watch6 Classic 47mm", category:"Accessories", price:"175,000",
+    description:"The rotating bezel returns — premium stainless steel Galaxy Watch with advanced health monitoring and Wear OS 4.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/sm-r960nzsaxfe/gallery/levant-galaxy-watch6-classic-47mm-sm-r960nzsaxfe-thumb-539573051?$650_519_PNG$"],
+    specs:{"Display":"1.47\" Super AMOLED","Processor":"Exynos W930","Battery":"425mAh","Health":"BIA, ECG, Blood Pressure","Water Resistance":"5ATM + IP68","OS":"Wear OS 4 + One UI Watch 5"} },
+  { id:"jbl-charge-5", name:"JBL Charge 5", category:"Accessories", price:"72,000",
+    description:"Waterproof Bluetooth speaker with 20 hours of playtime and a 7500mAh power bank to charge your devices on the go.",
+    images:["https://in.jbl.com/on/demandware.static/-/Sites-masterCatalog_Harman/default/dw5a9cf6c6/JBL_CHARGE5_Product%20Image_Hero_Blue_1605x1605px.png"],
+    specs:{"Battery":"20 hours","Charging":"USB-C + Power Bank","Water Resistance":"IP67","Connectivity":"Bluetooth 5.1","Frequency":"65Hz – 20kHz","Weight":"960g"} },
+  { id:"baseus-65w-gan-charger", name:"Baseus 65W GaN 3-in-1 Charger", category:"Accessories", price:"18,500",
+    description:"Charge your laptop, phone, and earbuds simultaneously with one compact GaN charger. Replaces three chargers with one.",
+    images:["https://www.baseus.com/cdn/shop/products/1_64c5ab3e-33e4-4a11-9e85-fbd4d14e9a43_1080x.jpg"],
+    specs:{"Total Power":"65W","Ports":"2x USB-C + 1x USB-A","Compatible":"MacBook, iPad, iPhone, Android","Technology":"GaN (Gallium Nitride)","Safety":"OVP, OCP, SCP, OTP","Size":"65 × 65 × 32mm"} },
+  { id:"logitech-mx-keys-s", name:"Logitech MX Keys S Wireless Keyboard", category:"Accessories", price:"65,000",
+    description:"Premium wireless keyboard with Smart Backlit keys, USB-C charging, and multi-device connectivity for up to 3 computers.",
+    images:["https://resource.logitech.com/w_692,c_lpad,ar_4:3,q_auto,f_auto,dpr_1.0/d_transparent.gif/content/dam/logitech/en/products/keyboards/mx-keys-s/gallery/mx-keys-s-top-view-graphite.png"],
+    specs:{"Layout":"Full-size with numpad","Connectivity":"Bluetooth + USB receiver","Battery":"10 days backlit / 5 months no backlight","Multi-device":"Up to 3 devices","OS":"Windows, macOS, Linux","Weight":"810g"} },
+  { id:"samsung-t7-ssd", name:"Samsung T7 Portable SSD 1TB", category:"Accessories", price:"52,000",
+    description:"Pocket-sized SSD with blazing USB 3.2 Gen 2 speeds up to 1,050 MB/s — backup your MacBook or phone photos in seconds.",
+    images:["https://images.samsung.com/is/image/samsung/p6pim/levant/mu-pc1t0t-ww/gallery/levant-portable-ssd-t7-mu-pc1t0t-ww-thumb-534252072?$650_519_PNG$"],
+    specs:{"Capacity":"500GB / 1TB / 2TB","Interface":"USB 3.2 Gen 2 (10Gbps)","Read Speed":"1,050 MB/s","Write Speed":"1,000 MB/s","Encryption":"256-bit AES","Dimensions":"85 × 57 × 8mm","Weight":"58g"} },
+  { id:"anker-powercore-26800", name:"Anker PowerCore 26800 Power Bank", category:"Accessories", price:"28,000",
+    description:"26,800mAh beast that can fully charge an iPhone 15 almost 7 times — three USB ports for simultaneous charging.",
+    images:["https://m.media-amazon.com/images/I/61gC0TKXZhL.__AC_SX300_SY300_QL70_ML2_.jpg"],
+    specs:{"Capacity":"26800mAh","Output":"3x USB-A (total 30W)","Input":"Micro-USB","Compatible":"All smartphones and tablets","Safety":"MultiProtect 11-in-1","Weight":"480g"} }
+];
+
+window.PRODUCTS = PRODUCTS;
+
+let pushed = 0;
+let failed = 0;
+
+function log(msg, cls='') {
+    const el = document.getElementById('log');
+    el.innerHTML += `<div class="${cls}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+}
+
+function updateStats() {
+    document.getElementById('pushed-count').textContent = pushed;
+    document.getElementById('fail-count').textContent = failed;
+    const pct = Math.round(((pushed + failed) / PRODUCTS.length) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+}
+
+window.seedAll = async function() {
+    const btn = document.getElementById('btn-seed');
+    btn.disabled = true;
+    btn.textContent = '⏳ Seeding…';
+    pushed = 0; failed = 0;
+    document.getElementById('log').innerHTML = '';
+    log(`// Starting seed of ${PRODUCTS.length} products…`, 'info');
+
+    for (const product of PRODUCTS) {
+        try {
+            await setDoc(doc(db, 'products', product.id), product);
+            pushed++;
+            log(`✓ ${product.name}`, 'ok');
+        } catch(e) {
+            failed++;
+            log(`✗ FAILED: ${product.name} — ${e.message}`, 'err');
+        }
+        updateStats();
+        await new Promise(r => setTimeout(r, 80)); // small delay to avoid rate limits
+    }
+
+    log(`\n// Completed: ${pushed} pushed, ${failed} failed.`, pushed === PRODUCTS.length ? 'ok' : 'warn');
+    btn.textContent = pushed === PRODUCTS.length ? '✅ All Seeded!' : '⚠️ Done (with errors)';
+    btn.disabled = false;
+};
+
+window.clearAll = async function() {
+    if (!confirm(`Delete ALL ${PRODUCTS.length} products from Firestore? This cannot be undone.`)) return;
+    log('// Clearing all products…', 'warn');
+    try {
+        const snap = await getDocs(collection(db, 'products'));
+        let cleared = 0;
+        for (const d of snap.docs) {
+            await deleteDoc(doc(db, 'products', d.id));
+            cleared++;
+            log(`🗑 Deleted: ${d.id}`, 'warn');
+        }
+        log(`// Cleared ${cleared} products.`, 'info');
+    } catch(e) {
+        log(`✗ Error: ${e.message}`, 'err');
+    }
+};
+</script>
+</body>
+</html>

@@ -4,198 +4,342 @@
     <meta name="google-adsense-account" content="ca-pub-3059181513838739">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gearnest | Premium Tech Reviews</title>
+    <title>GearNest | Premium Tech Reviews & Price Comparison Nigeria</title>
+    <meta name="description" content="GearNest is Nigeria's trusted source for unbiased tech reviews, spec comparisons, and the best prices on phones, laptops, and tablets.">
+    <meta name="keywords" content="phone reviews Nigeria, laptop prices Nigeria, tech comparison, buy phones Nigeria, GearNest">
+    <meta name="author" content="GearNest Editorial Team">
+    <meta property="og:title" content="GearNest | Premium Tech Reviews Nigeria">
+    <meta property="og:description" content="Nigeria's trusted source for unbiased tech reviews and price comparisons.">
+    <meta property="og:type" content="website">
+    <link rel="canonical" href="https://gearnested.web.app/">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
+        body { font-family: 'DM Sans', sans-serif; }
+        h1,h2,h3,.font-display { font-family: 'Space Grotesk', sans-serif; }
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        
         @media (max-width: 640px) {
             .detail-content { font-size: 0.85rem; }
             .detail-title { font-size: 1.5rem !important; }
             .detail-price { font-size: 1.25rem !important; }
             .detail-image { height: 200px !important; }
         }
-
-        .gallery-thumb.active { border-color: #3b82f6; border-width: 2px; }
-        
+        .gallery-thumb.active { border-color: #2563eb; border-width: 2px; }
         .slide-up-enter-active, .slide-up-leave-active { transition: transform 0.3s ease-out; }
         .slide-up-enter-from, .slide-up-leave-to { transform: translateY(100%); }
-
-        .detail-content {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-
+        .detail-content { min-height: 100vh; display: flex; flex-direction: column; }
         @media (max-width: 380px) {
             .grid-cols-2 { gap: 0.5rem !important; }
             h2 { font-size: 1rem !important; }
         }
+        .ad-slot { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 11px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
+        .prose h2 { font-size: 1.3rem; font-weight: 700; margin: 1.5rem 0 0.75rem; color: #1e293b; }
+        .prose p { margin-bottom: 1rem; line-height: 1.7; color: #475569; }
+        .prose ul { list-style: disc; padding-left: 1.5rem; margin-bottom: 1rem; color: #475569; }
+        .prose ul li { margin-bottom: 0.4rem; }
+        .prose a { color: #2563eb; text-decoration: underline; }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 font-sans">
-    <div id="app">
-        <header class="bg-white shadow-sm sticky top-0 z-40">
-            <div class="container mx-auto px-4 py-3">
-                <div class="flex justify-between items-center mb-4">
-                    <h1 class="text-2xl font-black text-blue-700 tracking-tighter">GEARNEST</h1>
-                    <button @click="toggleCompareMode" 
-                            :class="compareMode ? 'bg-red-500' : 'bg-blue-600'" 
-                            class="text-white px-5 py-2 rounded-full text-xs font-bold shadow-md uppercase tracking-widest transition-all">
+<body class="bg-slate-50 text-slate-900">
+<div id="app">
+
+    <!-- HEADER -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-slate-100">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center mb-3">
+                <button @click="currentPage='home'; selectedDevice=null" class="text-2xl font-black text-blue-700 tracking-tighter font-display">GEARNEST</button>
+                <div class="flex gap-2 items-center">
+                    <button @click="toggleCompareMode"
+                            :class="compareMode ? 'bg-red-500' : 'bg-blue-600'"
+                            class="text-white px-4 py-1.5 rounded-full text-xs font-bold shadow uppercase tracking-wider transition-all">
                         {{ compareMode ? 'Exit' : 'Compare' }}
                     </button>
                 </div>
-
-                <div class="space-y-3">
-                    <div class="relative group">
-                        <span class="absolute left-3 top-2.5 text-slate-400">
-                            <i data-lucide="search" class="w-5 h-5"></i>
-                        </span>
-                        <input v-model="searchQuery" type="text" placeholder="Search devices..." 
-                               class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white transition-all">
-                    </div>
-                    <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-                        <button v-for="cat in categories" @click="activeFilter = cat"
-                                :class="activeFilter === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'"
-                                class="px-5 py-1.5 rounded-full border whitespace-nowrap text-xs font-bold transition-all shadow-sm">
-                            {{ cat }}
-                        </button>
-                    </div>
+            </div>
+            <div v-if="currentPage === 'home'" class="space-y-2">
+                <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></span>
+                    <input v-model="searchQuery" type="text" placeholder="Search phones, laptops, tablets…"
+                           class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white transition-all text-sm">
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <button v-for="cat in categories" @click="activeFilter = cat"
+                            :class="activeFilter === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'"
+                            class="px-4 py-1.5 rounded-full border whitespace-nowrap text-xs font-bold transition-all shadow-sm">
+                        {{ cat }}
+                    </button>
                 </div>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <main class="container mx-auto p-4">
+    <!-- MAIN CONTENT -->
+    <main class="container mx-auto px-4 py-4 min-h-screen">
 
-            <!-- Loading State -->
-            <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
-                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Loading devices...</p>
+        <!-- ===== HOME PAGE ===== -->
+        <div v-if="currentPage === 'home'">
+            <!-- AdSense Banner Top -->
+            <div class="ad-slot h-16 mb-4">
+                <ins class="adsbygoogle" style="display:block;width:100%;height:60px" data-ad-client="ca-pub-3059181513838739" data-ad-slot="AUTO" data-ad-format="horizontal"></ins>
             </div>
 
-            <!-- Error State -->
+            <!-- Loading -->
+            <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
+                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Loading devices…</p>
+            </div>
+
+            <!-- Error -->
             <div v-else-if="error" class="flex flex-col items-center justify-center py-24 gap-3">
                 <i data-lucide="wifi-off" class="w-10 h-10 text-red-400"></i>
                 <p class="text-slate-500 text-sm font-bold">Failed to load products</p>
                 <button @click="fetchDevices" class="mt-2 px-6 py-2 bg-blue-600 text-white rounded-full text-xs font-bold">Retry</button>
             </div>
 
-            <!-- Empty State -->
+            <!-- Empty -->
             <div v-else-if="filteredDevices.length === 0" class="flex flex-col items-center justify-center py-24 gap-3">
                 <i data-lucide="package-x" class="w-10 h-10 text-slate-300"></i>
                 <p class="text-slate-400 text-sm font-bold">No devices found</p>
             </div>
 
             <!-- Compare Tray -->
-            <div v-if="compareMode && compareSelection.length > 0" 
-                 class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md bg-slate-900/95 backdrop-blur-lg text-white p-4 rounded-3xl shadow-2xl flex justify-between items-center border border-white/10 transition-all duration-500">
-                <div class="flex items-center gap-4">
+            <div v-if="compareMode && compareSelection.length > 0"
+                 class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md bg-slate-900/95 backdrop-blur-lg text-white p-4 rounded-3xl shadow-2xl flex justify-between items-center border border-white/10">
+                <div class="flex items-center gap-3">
                     <div class="flex -space-x-3">
                         <div v-for="item in compareSelection" :key="item.id" class="w-10 h-10 rounded-full border-2 border-slate-900 bg-white overflow-hidden">
                             <img :src="item.images[0]" class="w-full h-full object-contain">
                         </div>
                     </div>
-                    <span class="text-xs font-black uppercase tracking-widest">{{ compareSelection.length }} / 2 Picked</span>
+                    <span class="text-xs font-black uppercase tracking-widest">{{ compareSelection.length }} / 2</span>
                 </div>
-                <button v-if="compareSelection.length === 2" @click="showCompareResult = true" 
-                        class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-tighter shadow-lg transition-all active:scale-95">
-                    Compare
-                </button>
+                <button v-if="compareSelection.length === 2" @click="showCompareResult = true"
+                        class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase">Compare</button>
             </div>
 
             <!-- Battleground Modal -->
             <transition name="slide-up">
                 <div v-if="showCompareResult" class="fixed inset-0 z-[120] bg-slate-50 overflow-y-auto">
-                    <nav class="sticky top-0 bg-white/80 backdrop-blur-md border-b px-6 py-4 flex justify-between items-center z-10">
-                        <button @click="showCompareResult = false" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                    <nav class="sticky top-0 bg-white/80 backdrop-blur-md border-b px-4 py-4 flex justify-between items-center z-10">
+                        <button @click="showCompareResult = false" class="p-2 hover:bg-slate-100 rounded-full">
                             <i data-lucide="arrow-left" class="w-6 h-6"></i>
                         </button>
-                        <h2 class="font-black text-lg tracking-tighter italic">BATTLEGROUND</h2>
+                        <h2 class="font-black text-lg tracking-tighter italic font-display">BATTLEGROUND</h2>
                         <div class="w-10"></div>
                     </nav>
-
                     <div class="container mx-auto max-w-2xl px-4 py-8">
-                        <div class="grid grid-cols-2 gap-3 md:gap-6 mb-12">
-                            <div v-for="(item, index) in compareSelection" :key="item.id" 
-                                 class="bg-white p-4 rounded-3xl shadow-sm border border-slate-100 text-center relative overflow-hidden">
-                                <div v-if="isWinner(item)" class="absolute top-0 right-0 bg-yellow-400 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase tracking-tighter">Winner</div>
-                                <img :src="item.images[0]" class="h-24 md:h-40 mx-auto object-contain mb-4 drop-shadow-xl">
-                                <p class="font-black text-xs md:text-sm leading-tight text-slate-800">{{ item.name }}</p>
+                        <div class="grid grid-cols-2 gap-3 mb-12">
+                            <div v-for="item in compareSelection" :key="item.id"
+                                 class="bg-white p-4 rounded-3xl shadow-sm border text-center relative overflow-hidden">
+                                <div v-if="isWinner(item)" class="absolute top-0 right-0 bg-yellow-400 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase">Winner</div>
+                                <img :src="item.images[0]" class="h-24 mx-auto object-contain mb-4 drop-shadow-xl">
+                                <p class="font-black text-xs leading-tight text-slate-800">{{ item.name }}</p>
                             </div>
                         </div>
-
-                        <div v-if="compareSelection.length === 2" class="bg-white rounded-[2rem] shadow-xl border border-slate-100 overflow-hidden">
-                            <div v-for="(val, key) in compareSelection[0].specs" :key="key" class="border-b border-slate-50 p-5 md:p-6">
+                        <div v-if="compareSelection.length === 2" class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
+                            <div v-for="(val, key) in compareSelection[0].specs" :key="key" class="border-b border-slate-50 p-5">
                                 <p class="text-[10px] font-black uppercase text-blue-500 mb-3 text-center tracking-[0.2em]">{{ key }}</p>
                                 <div class="grid grid-cols-2 gap-4">
-                                    <div class="text-center font-bold text-sm md:text-base px-2 border-r border-slate-100">{{ compareSelection[0].specs[key] }}</div>
-                                    <div class="text-center font-bold text-sm md:text-base px-2">{{ compareSelection[1].specs[key] }}</div>
+                                    <div class="text-center font-bold text-sm px-2 border-r border-slate-100">{{ compareSelection[0].specs[key] }}</div>
+                                    <div class="text-center font-bold text-sm px-2">{{ compareSelection[1].specs[key] }}</div>
                                 </div>
                             </div>
-
-                            <div class="bg-slate-900 text-white p-6 md:p-8">
+                            <div class="bg-slate-900 text-white p-6">
                                 <p class="text-[10px] font-black uppercase text-slate-400 mb-4 text-center tracking-[0.2em]">Investment</p>
                                 <div class="grid grid-cols-2 gap-4">
                                     <div class="text-center">
-                                        <p class="font-black text-lg md:text-2xl">₦{{ compareSelection[0].price }}</p>
-                                        <span v-if="parsePrice(compareSelection[0].price) < parsePrice(compareSelection[1].price)" class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Better Deal</span>
+                                        <p class="font-black text-lg">₦{{ compareSelection[0].price }}</p>
+                                        <span v-if="parsePrice(compareSelection[0].price) < parsePrice(compareSelection[1].price)" class="text-[9px] text-green-400 font-bold uppercase">Better Deal</span>
                                     </div>
                                     <div class="text-center border-l border-white/10">
-                                        <p class="font-black text-lg md:text-2xl">₦{{ compareSelection[1].price }}</p>
-                                        <span v-if="parsePrice(compareSelection[1].price) < parsePrice(compareSelection[0].price)" class="text-[9px] text-green-400 font-bold uppercase tracking-widest">Better Deal</span>
+                                        <p class="font-black text-lg">₦{{ compareSelection[1].price }}</p>
+                                        <span v-if="parsePrice(compareSelection[1].price) < parsePrice(compareSelection[0].price)" class="text-[9px] text-green-400 font-bold uppercase">Better Deal</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <button @click="showCompareResult = false" class="w-full mt-8 py-4 bg-slate-200 text-slate-600 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-slate-300 transition-all">
-                            Close Comparison
-                        </button>
+                        <button @click="showCompareResult = false" class="w-full mt-8 py-4 bg-slate-200 text-slate-600 rounded-2xl font-black uppercase text-xs tracking-widest">Close</button>
                     </div>
                 </div>
             </transition>
 
             <!-- Product Grid -->
-            <div v-if="!loading && !error" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                <div v-for="item in filteredDevices" :key="item.id" 
-                     class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group">
-                    <div class="relative aspect-square bg-slate-50 flex items-center justify-center p-4">
-                        <img :src="item.images[0]" class="max-h-full object-contain group-hover:scale-105 transition-transform duration-500">
-                        <div v-if="compareMode" class="absolute top-3 right-3">
-                            <input type="checkbox" :value="item" v-model="compareSelection" :disabled="compareSelection.length >= 2 && !compareSelection.includes(item)" 
-                                   class="w-6 h-6 rounded-full border-2 border-blue-500 cursor-pointer">
+            <div v-if="!loading && !error && filteredDevices.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <template v-for="(item, index) in filteredDevices" :key="item.id">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                        <div class="relative aspect-square bg-slate-50 flex items-center justify-center p-4">
+                            <img :src="item.images[0]" class="max-h-full object-contain group-hover:scale-105 transition-transform duration-500" :alt="item.name">
+                            <div v-if="compareMode" class="absolute top-3 right-3">
+                                <input type="checkbox" :value="item" v-model="compareSelection" :disabled="compareSelection.length >= 2 && !compareSelection.includes(item)"
+                                       class="w-6 h-6 rounded cursor-pointer accent-blue-600">
+                            </div>
+                            <span class="absolute top-3 left-3 bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{{ item.category }}</span>
+                        </div>
+                        <div class="p-3 flex flex-col flex-1">
+                            <h3 class="font-bold text-sm text-slate-800 leading-tight line-clamp-2 mb-1">{{ item.name }}</h3>
+                            <p class="text-base font-black text-slate-900 mt-auto mb-2">₦{{ item.price }}</p>
+                            <button @click="openDetails(item)" class="w-full border border-slate-200 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors">
+                                View Details
+                            </button>
                         </div>
                     </div>
-                    <div class="p-4 flex flex-col h-full">
-                        <h3 class="font-bold text-sm text-slate-800 leading-tight h-10 overflow-hidden">{{ item.name }}</h3>
-                        <p class="text-lg font-black text-slate-900 mt-2">₦{{ item.price }}</p>
-                        <button @click="openDetails(item)" class="mt-4 w-full border border-slate-200 py-2 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors">
-                            View Details
-                        </button>
+                    <!-- Insert ad every 10 products -->
+                    <div v-if="(index + 1) % 10 === 0" class="col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-5">
+                        <ins class="adsbygoogle ad-slot h-20 w-full block" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="AUTO" data-ad-format="fluid" data-ad-layout-key="-6t+ed+2i-1n-4w"></ins>
                     </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- ===== ABOUT PAGE ===== -->
+        <div v-if="currentPage === 'about'" class="max-w-2xl mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-6 font-display">About GearNest</h1>
+            <div class="prose">
+                <p>GearNest is Nigeria's independent tech review and product comparison platform. We are dedicated to helping consumers make informed purchasing decisions by providing detailed, unbiased specifications, honest reviews, and real market prices for smartphones, laptops, and tablets.</p>
+                <h2>Our Mission</h2>
+                <p>We believe every Nigerian consumer deserves access to clear, accurate tech information before spending their hard-earned money. Our team of tech enthusiasts researches, tests, and documents the latest devices available in the Nigerian market — from budget-friendly options to flagship powerhouses.</p>
+                <h2>What We Cover</h2>
+                <ul>
+                    <li><strong>Smartphones</strong> – Detailed specs, camera performance, battery life, and value-for-money analysis</li>
+                    <li><strong>Laptops</strong> – Performance benchmarks, build quality, display quality, and price comparisons</li>
+                    <li><strong>Tablets</strong> – Productivity assessments, display ratings, and use-case recommendations</li>
+                    <li><strong>Accessories</strong> – Earbuds, smartwatches, chargers, and more</li>
+                </ul>
+                <h2>Our Editorial Standards</h2>
+                <p>GearNest maintains strict editorial independence. We do not accept payments from manufacturers to influence our reviews. Prices displayed are sourced from major Nigerian retailers and are updated regularly. Affiliate links may be used, which help support the site at no extra cost to you.</p>
+                <h2>Our Team</h2>
+                <p>Based in Lagos, Nigeria, the GearNest team consists of software engineers, tech journalists, and everyday gadget enthusiasts who are passionate about helping the Nigerian tech community thrive.</p>
+                <h2>Contact Us</h2>
+                <p>Have a question, correction, or partnership inquiry? <button @click="currentPage='contact'" class="text-blue-600 underline">Reach out to us</button>. We read every message and typically respond within 48 hours.</p>
+            </div>
+        </div>
+
+        <!-- ===== PRIVACY POLICY PAGE ===== -->
+        <div v-if="currentPage === 'privacy'" class="max-w-2xl mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-2 font-display">Privacy Policy</h1>
+            <p class="text-xs text-slate-400 mb-6">Last updated: June 2025</p>
+            <div class="prose">
+                <p>GearNest ("we", "us", or "our") operates the website gearnested.web.app. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our service.</p>
+                <h2>Information We Collect</h2>
+                <p>We collect several types of information to provide and improve our service:</p>
+                <ul>
+                    <li><strong>Usage Data:</strong> We automatically collect information on how the site is accessed (pages visited, time spent, referring URL, device type, browser type). This is collected anonymously.</li>
+                    <li><strong>Cookies:</strong> We use cookies and similar tracking technologies to track activity on our site and hold certain information. You can instruct your browser to refuse all cookies or indicate when a cookie is being sent.</li>
+                    <li><strong>Contact Information:</strong> If you contact us via email or WhatsApp, we retain your contact details solely for the purpose of responding to your inquiry.</li>
+                </ul>
+                <h2>Google AdSense & Third-Party Advertising</h2>
+                <p>GearNest uses Google AdSense to display advertisements. Google may use cookies to serve ads based on your prior visits to this or other websites. You can opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google Ad Settings</a>. We do not control the content of ads served by Google AdSense.</p>
+                <h2>Google Analytics</h2>
+                <p>We use Google Analytics to understand how visitors interact with our website. Google Analytics collects information such as how often users visit the site and what pages they visit. We use this information to improve our site. Google's ability to use and share information collected by Google Analytics is governed by the <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google Analytics Terms of Service</a>.</p>
+                <h2>Firebase</h2>
+                <p>Our product database is powered by Google Firebase. Firebase may collect anonymous usage statistics as described in the <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">Firebase Privacy Policy</a>.</p>
+                <h2>Data Security</h2>
+                <p>We value your trust in providing us your information. We do not sell, trade, or rent your personal identification information to others. We use commercially acceptable means to protect your personal information but cannot guarantee absolute security.</p>
+                <h2>Children's Privacy</h2>
+                <p>Our service does not address anyone under the age of 13. We do not knowingly collect personally identifiable information from children under 13.</p>
+                <h2>Changes to This Policy</h2>
+                <p>We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new policy on this page with a new "Last updated" date.</p>
+                <h2>Contact Us</h2>
+                <p>If you have any questions about this Privacy Policy, please <button @click="currentPage='contact'" class="text-blue-600 underline">contact us</button>.</p>
+            </div>
+        </div>
+
+        <!-- ===== TERMS PAGE ===== -->
+        <div v-if="currentPage === 'terms'" class="max-w-2xl mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-2 font-display">Terms of Service</h1>
+            <p class="text-xs text-slate-400 mb-6">Last updated: June 2025</p>
+            <div class="prose">
+                <p>By accessing and using GearNest (gearnested.web.app), you accept and agree to be bound by the following Terms of Service. Please read them carefully.</p>
+                <h2>1. Use of the Site</h2>
+                <p>GearNest is provided for informational and educational purposes only. You agree to use the site only for lawful purposes and in a manner that does not infringe the rights of others.</p>
+                <h2>2. Product Information</h2>
+                <p>We strive to ensure that product specifications, prices, and descriptions are accurate. However, GearNest does not guarantee that all information is current or error-free. Prices are indicative and may vary by retailer. Always verify current prices and availability with the retailer before making a purchase.</p>
+                <h2>3. Intellectual Property</h2>
+                <p>All content on GearNest, including text, graphics, logos, and images, is the property of GearNest or its content suppliers and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works without our express written permission.</p>
+                <h2>4. Affiliate Disclosure</h2>
+                <p>GearNest may contain affiliate links. If you click on an affiliate link and purchase a product, we may receive a small commission at no additional cost to you. This helps us maintain and improve the site. Our editorial content is not influenced by affiliate relationships.</p>
+                <h2>5. Third-Party Links</h2>
+                <p>Our site may contain links to third-party websites. GearNest has no control over, and assumes no responsibility for, the content, privacy policies, or practices of any third-party sites.</p>
+                <h2>6. Disclaimer of Warranties</h2>
+                <p>GearNest is provided on an "as is" basis without warranties of any kind. We disclaim all warranties, express or implied, including merchantability and fitness for a particular purpose.</p>
+                <h2>7. Limitation of Liability</h2>
+                <p>GearNest shall not be liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of the site or reliance on information presented herein.</p>
+                <h2>8. Changes to Terms</h2>
+                <p>We reserve the right to modify these terms at any time. Continued use of the site after changes constitutes acceptance of the new terms.</p>
+                <h2>9. Governing Law</h2>
+                <p>These terms are governed by the laws of the Federal Republic of Nigeria.</p>
+                <h2>10. Contact</h2>
+                <p>For questions about these Terms, please <button @click="currentPage='contact'" class="text-blue-600 underline">contact us</button>.</p>
+            </div>
+        </div>
+
+        <!-- ===== CONTACT PAGE ===== -->
+        <div v-if="currentPage === 'contact'" class="max-w-lg mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-2 font-display">Contact Us</h1>
+            <p class="text-slate-500 mb-8 text-sm">Have a question, correction, or want to partner with us? We'd love to hear from you.</p>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Your Name</label>
+                    <input v-model="contactForm.name" type="text" placeholder="e.g. Chidi Okafor"
+                           class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Email Address</label>
+                    <input v-model="contactForm.email" type="email" placeholder="you@example.com"
+                           class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Subject</label>
+                    <select v-model="contactForm.subject" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white">
+                        <option value="">Select a subject…</option>
+                        <option>Product information correction</option>
+                        <option>Missing product request</option>
+                        <option>Advertising inquiry</option>
+                        <option>Partnership / press</option>
+                        <option>General question</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Message</label>
+                    <textarea v-model="contactForm.message" rows="4" placeholder="Tell us how we can help…"
+                              class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white resize-none"></textarea>
+                </div>
+                <div v-if="contactSent" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-semibold">
+                    ✓ Message sent! We'll get back to you within 48 hours.
+                </div>
+                <button @click="submitContact" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase tracking-wider text-sm hover:bg-blue-700 transition-colors">
+                    Send Message
+                </button>
+                <div class="pt-2 border-t border-slate-100 flex items-center gap-3 text-sm text-slate-500">
+                    <i data-lucide="message-circle" class="w-4 h-4 text-green-500"></i>
+                    <span>Or chat on <a href="https://wa.me/2349132720329" target="_blank" class="text-green-600 font-semibold">WhatsApp</a> for a faster reply</span>
                 </div>
             </div>
-        </main>
+        </div>
 
-        <!-- Device Detail Modal -->
+        <!-- ===== DEVICE DETAIL MODAL ===== -->
         <transition name="slide-up">
             <div v-if="selectedDevice" class="fixed inset-0 z-[100] bg-white overflow-y-auto detail-content">
                 <nav class="sticky top-0 bg-white/90 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center z-10">
                     <button @click="closeDetails" class="p-2 hover:bg-slate-100 rounded-full">
-                        <i data-lucide="x" class="w-6 h-6"></i>
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
                     </button>
                     <span class="font-bold text-xs uppercase tracking-widest text-slate-500">Device Specs</span>
                     <div class="w-10"></div>
                 </nav>
-
                 <div class="container mx-auto max-w-4xl px-4 py-4">
+                    <!-- Ad at top of detail -->
+                    <div class="ad-slot h-16 mb-4 w-full">
+                        <ins class="adsbygoogle" style="display:block;width:100%;height:60px" data-ad-client="ca-pub-3059181513838739" data-ad-slot="AUTO" data-ad-format="horizontal"></ins>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-4">
                             <div class="detail-image h-64 md:h-80 bg-slate-50 rounded-2xl flex items-center justify-center p-6 border border-slate-100">
-                                <img :src="activeImage" class="max-h-full object-contain">
+                                <img :src="activeImage" :alt="selectedDevice.name" class="max-h-full object-contain">
                             </div>
                             <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                                 <button v-for="img in selectedDevice.images" :key="img" @click="activeImage = img"
@@ -205,32 +349,41 @@
                                 </button>
                             </div>
                         </div>
-
                         <div>
                             <span class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{{ selectedDevice.category }}</span>
-                            <h1 class="detail-title text-3xl font-black text-slate-900 mb-2">{{ selectedDevice.name }}</h1>
-                            <p class="detail-price text-2xl font-bold text-slate-900 mb-6">₦{{ selectedDevice.price }}</p>
-                            
+                            <h1 class="detail-title text-3xl font-black text-slate-900 mb-2 font-display">{{ selectedDevice.name }}</h1>
+                            <p class="detail-price text-2xl font-bold text-slate-900 mb-4">₦{{ selectedDevice.price }}</p>
+                            <div v-if="selectedDevice.description" class="text-sm text-slate-600 leading-relaxed mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">
+                                {{ selectedDevice.description }}
+                            </div>
                             <h3 class="text-[11px] font-black uppercase text-slate-400 mb-3 flex items-center gap-2">
                                 <i data-lucide="info" class="w-3 h-3"></i> Core Specifications
                             </h3>
-                            <div class="space-y-2 mb-8">
-                                <div v-for="(val, key) in selectedDevice.specs" class="flex justify-between p-2 bg-slate-50 rounded-lg text-sm">
-                                    <span class="text-slate-500 capitalize">{{ key }}</span>
-                                    <span class="font-bold text-slate-800">{{ val }}</span>
+                            <div class="space-y-2 mb-6">
+                                <div v-for="(val, key) in selectedDevice.specs" class="flex justify-between p-2.5 bg-slate-50 rounded-lg text-sm border border-slate-100">
+                                    <span class="text-slate-500 capitalize font-medium">{{ key }}</span>
+                                    <span class="font-bold text-slate-800 text-right max-w-[55%]">{{ val }}</span>
                                 </div>
                             </div>
+                            <a href="https://wa.me/2349132720329" target="_blank"
+                               class="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-colors">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> Enquire on WhatsApp
+                            </a>
                         </div>
                     </div>
 
-                    <div class="mt-12 pt-8 border-t">
-                        <h3 class="font-black text-lg text-slate-900 mb-6">Related Devices</h3>
+                    <!-- Ad mid-detail -->
+                    <div class="ad-slot h-20 my-8 w-full">
+                        <ins class="adsbygoogle" style="display:block;width:100%;height:90px" data-ad-client="ca-pub-3059181513838739" data-ad-slot="AUTO" data-ad-format="horizontal"></ins>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3 class="font-black text-lg text-slate-900 mb-4 font-display">Related Devices</h3>
                         <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-                            <div v-for="related in getRelated(selectedDevice)" :key="related.id" 
-                                 @click="openDetails(related)"
-                                 class="w-40 flex-shrink-0 cursor-pointer group">
+                            <div v-for="related in getRelated(selectedDevice)" :key="related.id"
+                                 @click="openDetails(related)" class="w-40 flex-shrink-0 cursor-pointer group">
                                 <div class="aspect-square bg-slate-50 rounded-xl p-3 mb-2 flex items-center justify-center border border-slate-100 group-hover:border-blue-200 transition-all">
-                                    <img :src="related.images[0]" class="max-h-full object-contain">
+                                    <img :src="related.images[0]" :alt="related.name" class="max-h-full object-contain">
                                 </div>
                                 <p class="text-xs font-bold text-slate-800 truncate">{{ related.name }}</p>
                                 <p class="text-xs text-blue-600 font-bold">₦{{ related.price }}</p>
@@ -241,168 +394,197 @@
             </div>
         </transition>
 
-        <!-- WhatsApp Button -->
-        <a href="https://wa.me/2349132720329" target="_blank" 
-           class="fixed bottom-6 right-6 bg-green-500 text-white p-3.5 rounded-full shadow-2xl z-50 hover:scale-110 active:scale-95 transition-all">
-           <i data-lucide="message-circle" class="w-6 h-6"></i>
-        </a>
-    </div>
+    </main>
 
-    <!-- Firebase SDKs -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getFirestore, collection, getDocs, doc, setDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-100 mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <!-- Footer Ad -->
+            <div class="ad-slot h-20 mb-6 w-full">
+                <ins class="adsbygoogle" style="display:block;width:100%;height:90px" data-ad-client="ca-pub-3059181513838739" data-ad-slot="AUTO" data-ad-format="horizontal"></ins>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div class="col-span-2 md:col-span-1">
+                    <div class="text-xl font-black text-blue-700 tracking-tighter mb-2 font-display">GEARNEST</div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Nigeria's trusted source for unbiased tech reviews, spec comparisons, and fair pricing.</p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black uppercase tracking-widest text-slate-700 mb-3">Browse</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button @click="activeFilter='Phones'; currentPage='home'" class="hover:text-blue-600 transition-colors">Phones</button></li>
+                        <li><button @click="activeFilter='Laptops'; currentPage='home'" class="hover:text-blue-600 transition-colors">Laptops</button></li>
+                        <li><button @click="activeFilter='Tablets'; currentPage='home'" class="hover:text-blue-600 transition-colors">Tablets</button></li>
+                        <li><button @click="activeFilter='Accessories'; currentPage='home'" class="hover:text-blue-600 transition-colors">Accessories</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black uppercase tracking-widest text-slate-700 mb-3">Company</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button @click="currentPage='about'; selectedDevice=null" class="hover:text-blue-600 transition-colors">About Us</button></li>
+                        <li><button @click="currentPage='contact'; selectedDevice=null" class="hover:text-blue-600 transition-colors">Contact</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black uppercase tracking-widest text-slate-700 mb-3">Legal</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button @click="currentPage='privacy'; selectedDevice=null" class="hover:text-blue-600 transition-colors">Privacy Policy</button></li>
+                        <li><button @click="currentPage='terms'; selectedDevice=null" class="hover:text-blue-600 transition-colors">Terms of Service</button></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-3">
+                <p class="text-xs text-slate-400">© 2025 GearNest. All rights reserved. Prices are indicative and may vary.</p>
+                <div class="flex gap-4 text-xs text-slate-400">
+                    <button @click="currentPage='privacy'" class="hover:text-slate-600">Privacy</button>
+                    <button @click="currentPage='terms'" class="hover:text-slate-600">Terms</button>
+                    <button @click="currentPage='contact'" class="hover:text-slate-600">Contact</button>
+                </div>
+            </div>
+        </div>
+    </footer>
 
-        const { createApp, ref, computed, onMounted, nextTick } = Vue;
+    <!-- WhatsApp FAB -->
+    <a href="https://wa.me/2349132720329" target="_blank"
+       class="fixed bottom-6 right-6 bg-green-500 text-white p-3.5 rounded-full shadow-2xl z-50 hover:scale-110 active:scale-95 transition-all">
+        <i data-lucide="message-circle" class="w-6 h-6"></i>
+    </a>
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCtj7-YA1S8FlWS6MCNwGUezEuXnkdj84U",
-            authDomain: "gearnested.firebaseapp.com",
-            projectId: "gearnested",
-            storageBucket: "gearnested.firebasestorage.app",
-            messagingSenderId: "114468029326",
-            appId: "1:114468029326:web:be9cb0c5bca48ce54bdadf",
-            measurementId: "G-YLHL3PXKQP"
-        };
+</div>
 
-        const firebaseApp = initializeApp(firebaseConfig);
-        const db = getFirestore(firebaseApp);
+<!-- Firebase SDKs -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // --- Traffic Tracking ---
-        const trackPageView = async () => {
-            try {
-                const today = new Date().toISOString().split('T')[0]; // e.g. "2025-04-21"
-                await setDoc(doc(db, "traffic", today), {
-                    date: today,
-                    pageViews: increment(1),
-                    lastSeen: serverTimestamp()
-                }, { merge: true });
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
 
-                // Total all-time counter
-                await setDoc(doc(db, "traffic", "__total__"), {
-                    pageViews: increment(1),
-                    visitors: increment(1)
-                }, { merge: true });
-            } catch (e) {
-                console.warn("Traffic tracking failed:", e);
-            }
-        };
+    const firebaseConfig = {
+        apiKey: "AIzaSyCtj7-YA1S8FlWS6MCNwGUezEuXnkdj84U",
+        authDomain: "gearnested.firebaseapp.com",
+        projectId: "gearnested",
+        storageBucket: "gearnested.firebasestorage.app",
+        messagingSenderId: "114468029326",
+        appId: "1:114468029326:web:be9cb0c5bca48ce54bdadf",
+        measurementId: "G-YLHL3PXKQP"
+    };
 
-        const trackProductView = async (productId, productName) => {
-            try {
-                await setDoc(doc(db, "productViews", productId), {
-                    productId,
-                    name: productName,
-                    views: increment(1),
-                    lastViewed: serverTimestamp()
-                }, { merge: true });
-            } catch (e) {
-                console.warn("Product view tracking failed:", e);
-            }
-        };
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
 
-        createApp({
-            setup() {
-                const devices = ref([]);
-                const searchQuery = ref("");
-                const activeFilter = ref("All");
-                const selectedDevice = ref(null);
-                const activeImage = ref("");
-                const compareMode = ref(false);
-                const compareSelection = ref([]);
-                const showCompareResult = ref(false);
-                const loading = ref(true);
-                const error = ref(false);
-                const categories = ["All", "Phones", "Laptops", "Tablets"];
+    const trackPageView = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            await setDoc(doc(db, "traffic", today), { date: today, pageViews: increment(1), lastSeen: serverTimestamp() }, { merge: true });
+            await setDoc(doc(db, "traffic", "__total__"), { pageViews: increment(1), visitors: increment(1) }, { merge: true });
+        } catch (e) { console.warn("Traffic tracking failed:", e); }
+    };
 
-                const refreshIcons = () => {
-                    nextTick(() => { if (window.lucide) window.lucide.createIcons(); });
-                };
+    const trackProductView = async (productId, productName) => {
+        try {
+            await setDoc(doc(db, "productViews", productId), { productId, name: productName, views: increment(1), lastViewed: serverTimestamp() }, { merge: true });
+        } catch (e) { console.warn("Product view tracking failed:", e); }
+    };
 
-                const fetchDevices = async () => {
-                    loading.value = true;
-                    error.value = false;
-                    try {
-                        const snapshot = await getDocs(collection(db, "products"));
-                        devices.value = snapshot.docs.map(doc => ({
-                            id: doc.id,
-                            ...doc.data()
-                        }));
-                    } catch (err) {
-                        console.error("Firestore error:", err);
-                        error.value = true;
-                    } finally {
-                        loading.value = false;
-                        refreshIcons();
-                    }
-                };
+    createApp({
+        setup() {
+            const devices = ref([]);
+            const searchQuery = ref("");
+            const activeFilter = ref("All");
+            const selectedDevice = ref(null);
+            const activeImage = ref("");
+            const compareMode = ref(false);
+            const compareSelection = ref([]);
+            const showCompareResult = ref(false);
+            const loading = ref(true);
+            const error = ref(false);
+            const currentPage = ref("home");
+            const contactSent = ref(false);
+            const categories = ["All", "Phones", "Laptops", "Tablets", "Accessories"];
+            const contactForm = ref({ name: "", email: "", subject: "", message: "" });
 
-                const filteredDevices = computed(() => {
-                    return devices.value.filter(d => {
-                        const s = searchQuery.value.toLowerCase();
-                        return (activeFilter.value === "All" || d.category === activeFilter.value) && d.name.toLowerCase().includes(s);
-                    });
-                });
+            const refreshIcons = () => { nextTick(() => { if (window.lucide) window.lucide.createIcons(); }); };
 
-                const openDetails = (device) => {
-                    selectedDevice.value = device;
-                    activeImage.value = device.images[0];
-                    document.body.style.overflow = 'hidden';
-                    trackProductView(device.id, device.name);
+            const fetchDevices = async () => {
+                loading.value = true;
+                error.value = false;
+                try {
+                    const snapshot = await getDocs(collection(db, "products"));
+                    devices.value = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                } catch (err) {
+                    console.error("Firestore error:", err);
+                    error.value = true;
+                } finally {
+                    loading.value = false;
                     refreshIcons();
-                };
+                }
+            };
 
-                const closeDetails = () => {
-                    selectedDevice.value = null;
-                    document.body.style.overflow = 'auto';
-                };
-
-                const getRelated = (current) => {
-                    return devices.value.filter(d => d.category === current.category && d.id !== current.id);
-                };
-
-                const toggleCompareMode = () => {
-                    compareMode.value = !compareMode.value;
-                    if (!compareMode.value) compareSelection.value = [];
-                    refreshIcons();
-                };
-
-                onMounted(() => {
-                    fetchDevices();
-                    trackPageView();
+            const filteredDevices = computed(() => {
+                return devices.value.filter(d => {
+                    const s = searchQuery.value.toLowerCase();
+                    return (activeFilter.value === "All" || d.category === activeFilter.value) && d.name.toLowerCase().includes(s);
                 });
+            });
 
-                return {
-                    devices,
-                    searchQuery,
-                    activeFilter,
-                    categories,
-                    filteredDevices,
-                    selectedDevice,
-                    activeImage,
-                    compareMode,
-                    compareSelection,
-                    showCompareResult,
-                    loading,
-                    error,
-                    fetchDevices,
-                    openDetails,
-                    closeDetails,
-                    getRelated,
-                    toggleCompareMode,
-                    parsePrice: (priceStr) => parseInt(String(priceStr).replace(/,/g, '')),
-                    isWinner: (item) => {
-                        if (compareSelection.value.length < 2) return false;
-                        const other = compareSelection.value.find(d => d.id !== item.id);
-                        if (!other) return false;
-                        const price1 = parseInt(String(item.price).replace(/,/g, ''));
-                        const price2 = parseInt(String(other.price).replace(/,/g, ''));
-                        return price1 < price2;
-                    }
-                };
-            }
-        }).mount('#app');
-    </script>
-    <script>(function(s){s.dataset.zone='10907515',s.src='https://al5sm.com/tag.min.js'})([document.documentElement, document.body].filter(Boolean).pop().appendChild(document.createElement('script')))</script>
+            const openDetails = (device) => {
+                selectedDevice.value = device;
+                activeImage.value = device.images[0];
+                document.body.style.overflow = 'hidden';
+                trackProductView(device.id, device.name);
+                refreshIcons();
+            };
+
+            const closeDetails = () => {
+                selectedDevice.value = null;
+                document.body.style.overflow = 'auto';
+            };
+
+            const getRelated = (current) => {
+                return devices.value.filter(d => d.category === current.category && d.id !== current.id).slice(0, 8);
+            };
+
+            const toggleCompareMode = () => {
+                compareMode.value = !compareMode.value;
+                if (!compareMode.value) compareSelection.value = [];
+                refreshIcons();
+            };
+
+            const submitContact = () => {
+                if (contactForm.value.name && contactForm.value.email && contactForm.value.message) {
+                    contactSent.value = true;
+                    contactForm.value = { name: "", email: "", subject: "", message: "" };
+                    setTimeout(() => contactSent.value = false, 5000);
+                }
+            };
+
+            onMounted(() => {
+                fetchDevices();
+                trackPageView();
+                refreshIcons();
+            });
+
+            return {
+                devices, searchQuery, activeFilter, categories, filteredDevices,
+                selectedDevice, activeImage, compareMode, compareSelection, showCompareResult,
+                loading, error, currentPage, contactForm, contactSent,
+                fetchDevices, openDetails, closeDetails, getRelated,
+                toggleCompareMode, submitContact,
+                parsePrice: (p) => parseInt(String(p).replace(/,/g, '')),
+                isWinner: (item) => {
+                    if (compareSelection.value.length < 2) return false;
+                    const other = compareSelection.value.find(d => d.id !== item.id);
+                    if (!other) return false;
+                    return parseInt(String(item.price).replace(/,/g, '')) < parseInt(String(other.price).replace(/,/g, ''));
+                }
+            };
+        }
+    }).mount('#app');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3059181513838739" crossorigin="anonymous"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e){}
+    });
+</script>
 </body>
 </html>
