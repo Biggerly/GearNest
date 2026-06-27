@@ -11,7 +11,7 @@
     <meta property="og:title" content="GearNest | Premium Tech Reviews Nigeria">
     <meta property="og:description" content="Nigeria's trusted source for unbiased tech reviews and price comparisons.">
     <meta property="og:type" content="website">
-    <link rel="canonical" href="https://gearnested.web.app/">
+    <link rel="canonical" href="https://gearnest.com.ng/">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -34,6 +34,970 @@
         .prose strong { color: #1e293b; font-weight: 700; }
         .prose a { color: #2563eb; text-decoration: underline; }
         .prose blockquote { border-left: 4px solid #2563eb; padding-left: 1rem; margin: 1.5rem 0; font-style: italic; color: #64748b; }
+        .blog-card:hover .blog-thumb { transform: scale(1.04); }
+        .blog-thumb { transition: transform 0.4s ease; }
+        @media (max-width: 640px) {
+            .detail-title { font-size: 1.5rem !important; }
+            .detail-price { font-size: 1.25rem !important; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+<div id="app">
+
+    <!-- HEADER -->
+    <header class="bg-white shadow-sm sticky top-0 z-40 border-b border-slate-100">
+        <div class="container mx-auto px-4 py-3">
+            <div class="flex justify-between items-center mb-3">
+                <button @click="goHome" class="text-2xl font-black text-blue-700 tracking-tighter font-display">GEARNEST</button>
+                <div class="flex gap-2 items-center">
+                    <button @click="navigateTo('blog'); selectedDevice=null"
+                            :class="currentPage==='blog' ? 'bg-slate-900 text-white' : 'bg-white text-slate-600 border border-slate-200'"
+                            class="px-4 py-1.5 rounded-full text-xs font-bold shadow-sm transition-all">Blog</button>
+                    <button v-if="currentPage==='home'" @click="toggleCompareMode"
+                            :class="compareMode ? 'bg-red-500' : 'bg-blue-600'"
+                            class="text-white px-4 py-1.5 rounded-full text-xs font-bold shadow uppercase tracking-wider transition-all">
+                        {{ compareMode ? 'Exit' : 'Compare' }}
+                    </button>
+                </div>
+            </div>
+            <!-- Search & filter only on home -->
+            <div v-if="currentPage === 'home'" class="space-y-2">
+                <div class="relative">
+                    <span class="absolute left-3 top-2.5 text-slate-400"><i data-lucide="search" class="w-4 h-4"></i></span>
+                    <input v-model="searchQuery" type="text" placeholder="Search phones, laptops, tablets…"
+                           class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none bg-slate-50 focus:bg-white transition-all text-sm">
+                </div>
+                <div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+                    <button v-for="cat in categories" @click="activeFilter = cat"
+                            :class="activeFilter === cat ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-slate-600 border-slate-200'"
+                            class="px-4 py-1.5 rounded-full border whitespace-nowrap text-xs font-bold transition-all shadow-sm">
+                        {{ cat }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-4 min-h-screen">
+
+        <!-- ===== HOME ===== -->
+        <div v-if="currentPage === 'home'">
+            <div class="ad-slot h-16 mb-4">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            </div>
+
+            <div v-if="loading" class="flex flex-col items-center justify-center py-24 gap-4">
+                <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                <p class="text-slate-400 text-sm font-bold uppercase tracking-widest">Loading devices…</p>
+            </div>
+            <div v-else-if="error" class="flex flex-col items-center justify-center py-24 gap-3">
+                <p class="text-slate-500 text-sm font-bold">Failed to load products</p>
+                <button @click="fetchDevices" class="mt-2 px-6 py-2 bg-blue-600 text-white rounded-full text-xs font-bold">Retry</button>
+            </div>
+            <div v-else-if="filteredDevices.length === 0" class="flex flex-col items-center justify-center py-24 gap-3">
+                <p class="text-slate-400 text-sm font-bold">No devices found</p>
+            </div>
+
+            <!-- Compare Tray -->
+            <div v-if="compareMode && compareSelection.length > 0"
+                 class="fixed bottom-24 left-1/2 -translate-x-1/2 z-[60] w-[92%] max-w-md bg-slate-900/95 backdrop-blur-lg text-white p-4 rounded-3xl shadow-2xl flex justify-between items-center border border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="flex -space-x-3">
+                        <div v-for="item in compareSelection" :key="item.id" class="w-10 h-10 rounded-full border-2 border-slate-900 bg-white overflow-hidden">
+                            <img :src="item.images[0]" class="w-full h-full object-contain">
+                        </div>
+                    </div>
+                    <span class="text-xs font-black uppercase tracking-widest">{{ compareSelection.length }} / 2</span>
+                </div>
+                <button v-if="compareSelection.length === 2" @click="showCompareResult = true"
+                        class="bg-blue-600 text-white px-5 py-2 rounded-xl text-xs font-black uppercase">Compare</button>
+            </div>
+
+            <!-- Compare Result -->
+            <transition name="slide-up">
+                <div v-if="showCompareResult" class="fixed inset-0 z-[120] bg-slate-50 overflow-y-auto">
+                    <nav class="sticky top-0 bg-white/80 backdrop-blur-md border-b px-4 py-4 flex justify-between items-center z-10">
+                        <button @click="showCompareResult = false" class="p-2 hover:bg-slate-100 rounded-full"><i data-lucide="arrow-left" class="w-6 h-6"></i></button>
+                        <h2 class="font-black text-lg tracking-tighter italic font-display">BATTLEGROUND</h2>
+                        <div class="w-10"></div>
+                    </nav>
+                    <div class="container mx-auto max-w-2xl px-4 py-8">
+                        <div class="grid grid-cols-2 gap-3 mb-12">
+                            <div v-for="item in compareSelection" :key="item.id" class="bg-white p-4 rounded-3xl shadow-sm border text-center relative overflow-hidden">
+                                <div v-if="isWinner(item)" class="absolute top-0 right-0 bg-yellow-400 text-[10px] font-black px-3 py-1 rounded-bl-xl uppercase">Winner</div>
+                                <img :src="item.images[0]" class="h-24 mx-auto object-contain mb-4 drop-shadow-xl">
+                                <p class="font-black text-xs leading-tight text-slate-800">{{ item.name }}</p>
+                            </div>
+                        </div>
+                        <div v-if="compareSelection.length === 2" class="bg-white rounded-[2rem] shadow-xl border overflow-hidden">
+                            <div v-for="(val, key) in compareSelection[0].specs" :key="key" class="border-b border-slate-50 p-5">
+                                <p class="text-[10px] font-black uppercase text-blue-500 mb-3 text-center tracking-[0.2em]">{{ key }}</p>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="text-center font-bold text-sm px-2 border-r border-slate-100">{{ compareSelection[0].specs[key] }}</div>
+                                    <div class="text-center font-bold text-sm px-2">{{ compareSelection[1].specs[key] }}</div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-900 text-white p-6">
+                                <p class="text-[10px] font-black uppercase text-slate-400 mb-4 text-center tracking-[0.2em]">Investment</p>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="text-center">
+                                        <p class="font-black text-lg">₦{{ compareSelection[0].price }}</p>
+                                        <span v-if="parsePrice(compareSelection[0].price) < parsePrice(compareSelection[1].price)" class="text-[9px] text-green-400 font-bold uppercase">Better Deal</span>
+                                    </div>
+                                    <div class="text-center border-l border-white/10">
+                                        <p class="font-black text-lg">₦{{ compareSelection[1].price }}</p>
+                                        <span v-if="parsePrice(compareSelection[1].price) < parsePrice(compareSelection[0].price)" class="text-[9px] text-green-400 font-bold uppercase">Better Deal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button @click="showCompareResult = false" class="w-full mt-8 py-4 bg-slate-200 text-slate-600 rounded-2xl font-black uppercase text-xs tracking-widest">Close</button>
+                    </div>
+                </div>
+            </transition>
+
+            <!-- Product Grid -->
+            <div v-if="!loading && !error && filteredDevices.length > 0" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+                <template v-for="(item, index) in filteredDevices" :key="item.id">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-xl transition-all duration-300 group flex flex-col">
+                        <div class="relative aspect-square bg-slate-50 flex items-center justify-center p-4">
+                            <img :src="item.images[0]" class="max-h-full object-contain group-hover:scale-105 transition-transform duration-500" :alt="item.name">
+                            <div v-if="compareMode" class="absolute top-3 right-3">
+                                <input type="checkbox" :value="item" v-model="compareSelection" :disabled="compareSelection.length >= 2 && !compareSelection.includes(item)" class="w-6 h-6 rounded cursor-pointer accent-blue-600">
+                            </div>
+                            <span class="absolute top-3 left-3 bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">{{ item.category }}</span>
+                        </div>
+                        <div class="p-3 flex flex-col flex-1">
+                            <h3 class="font-bold text-sm text-slate-800 leading-tight line-clamp-2 mb-1">{{ item.name }}</h3>
+                            <p class="text-base font-black text-slate-900 mt-auto mb-2">₦{{ item.price }}</p>
+                            <button @click="openDetails(item)" class="w-full border border-slate-200 py-1.5 rounded-lg text-xs font-bold hover:bg-slate-900 hover:text-white transition-colors">View Details</button>
+                        </div>
+                    </div>
+                    <div v-if="(index + 1) % 10 === 0" class="col-span-2 md:col-span-3 lg:col-span-4 xl:col-span-5">
+                        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                    </div>
+                </template>
+            </div>
+
+            <!-- Blog preview strip on home -->
+            <div v-if="!loading && !error" class="mt-10">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-black text-slate-900 font-display">Latest from the Blog</h2>
+                    <button @click="navigateTo('blog')" class="text-blue-600 text-sm font-bold hover:underline">See all →</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div v-for="post in blogPosts.slice(0,3)" :key="post.id" @click="openPost(post)"
+                         class="blog-card bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300">
+                        <div class="h-36 overflow-hidden bg-gradient-to-br" :class="post.gradient">
+                            <div class="h-full flex items-center justify-center p-4">
+                                <span class="text-5xl">{{ post.emoji }}</span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-wider">{{ post.category }}</span>
+                            <h3 class="font-bold text-sm text-slate-800 mt-1 leading-snug line-clamp-2">{{ post.title }}</h3>
+                            <p class="text-xs text-slate-500 mt-2 line-clamp-2">{{ post.excerpt }}</p>
+                            <div class="flex items-center gap-2 mt-3">
+                                <span class="text-[10px] text-slate-400">{{ post.date }}</span>
+                                <span class="text-[10px] text-slate-300">·</span>
+                                <span class="text-[10px] text-slate-400">{{ post.readTime }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== BLOG LIST PAGE ===== -->
+        <div v-if="currentPage === 'blog' && !selectedPost">
+            <div class="max-w-4xl mx-auto py-4">
+                <div class="mb-8">
+                    <h1 class="text-3xl font-black text-slate-900 font-display">GearNest Blog</h1>
+                    <p class="text-slate-500 mt-1">Expert tech guides, buying advice, and reviews for Nigerian consumers</p>
+                </div>
+
+                <!-- Ad -->
+                <div class="ad-slot h-16 mb-6">
+                    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                </div>
+
+                <!-- Featured post -->
+                <div @click="openPost(blogPosts[0])" class="blog-card bg-white rounded-3xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-xl cursor-pointer transition-all duration-300 mb-6 flex flex-col md:flex-row">
+                    <div class="md:w-2/5 h-48 md:h-auto overflow-hidden bg-gradient-to-br flex-shrink-0" :class="blogPosts[0].gradient">
+                        <div class="h-full flex items-center justify-center"><span class="text-8xl">{{ blogPosts[0].emoji }}</span></div>
+                    </div>
+                    <div class="p-6 flex flex-col justify-center">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="bg-blue-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Featured</span>
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-wider">{{ blogPosts[0].category }}</span>
+                        </div>
+                        <h2 class="text-xl font-black text-slate-900 font-display leading-tight mb-2">{{ blogPosts[0].title }}</h2>
+                        <p class="text-sm text-slate-500 leading-relaxed line-clamp-3">{{ blogPosts[0].excerpt }}</p>
+                        <div class="flex items-center gap-3 mt-4 text-xs text-slate-400">
+                            <span>{{ blogPosts[0].author }}</span>
+                            <span>·</span><span>{{ blogPosts[0].date }}</span>
+                            <span>·</span><span>{{ blogPosts[0].readTime }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Blog grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div v-for="(post, index) in blogPosts.slice(1)" :key="post.id"
+                         @click="openPost(post)"
+                         class="blog-card bg-white rounded-2xl border border-slate-100 overflow-hidden shadow-sm hover:shadow-lg cursor-pointer transition-all duration-300">
+                        <div class="h-40 overflow-hidden bg-gradient-to-br" :class="post.gradient">
+                            <div class="h-full flex items-center justify-center"><span class="text-6xl">{{ post.emoji }}</span></div>
+                        </div>
+                        <div class="p-5">
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-wider">{{ post.category }}</span>
+                            <h3 class="font-bold text-base text-slate-800 mt-1 leading-snug mb-2 font-display">{{ post.title }}</h3>
+                            <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed">{{ post.excerpt }}</p>
+                            <div class="flex items-center gap-2 mt-3 text-[10px] text-slate-400">
+                                <span>{{ post.author }}</span>
+                                <span>·</span><span>{{ post.date }}</span>
+                                <span>·</span><span>{{ post.readTime }}</span>
+                            </div>
+                        </div>
+                        <!-- Ad after every 4th post -->
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== BLOG ARTICLE PAGE ===== -->
+        <div v-if="currentPage === 'blog' && selectedPost">
+            <div class="max-w-2xl mx-auto py-4">
+                <button @click="selectedPost = null" class="flex items-center gap-2 text-slate-500 hover:text-slate-900 text-sm font-bold mb-6 transition-colors">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i> Back to Blog
+                </button>
+
+                <!-- Hero -->
+                <div class="rounded-3xl overflow-hidden h-52 mb-6" :class="selectedPost.gradient">
+                    <div class="h-full flex items-center justify-center"><span class="text-9xl">{{ selectedPost.emoji }}</span></div>
+                </div>
+
+                <span class="text-[10px] font-black text-blue-600 uppercase tracking-wider">{{ selectedPost.category }}</span>
+                <h1 class="text-2xl md:text-3xl font-black text-slate-900 font-display leading-tight mt-1 mb-3">{{ selectedPost.title }}</h1>
+                <div class="flex items-center gap-3 text-xs text-slate-400 mb-6 pb-6 border-b border-slate-100">
+                    <span class="font-semibold text-slate-600">{{ selectedPost.author }}</span>
+                    <span>·</span><span>{{ selectedPost.date }}</span>
+                    <span>·</span><span>{{ selectedPost.readTime }}</span>
+                </div>
+
+                <!-- Ad top of article -->
+                <div class="ad-slot h-16 mb-6">
+                    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                </div>
+
+                <div class="prose" v-html="selectedPost.content"></div>
+
+                <!-- Ad bottom of article -->
+                <div class="mt-8 mb-6">
+                    <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                </div>
+
+                <!-- Related articles -->
+                <div class="mt-4">
+                    <h3 class="font-black text-lg text-slate-900 mb-4 font-display">Related Articles</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div v-for="post in blogPosts.filter(p => p.id !== selectedPost.id && p.category === selectedPost.category).slice(0,2)" :key="post.id"
+                             @click="openPost(post)" class="blog-card flex gap-3 bg-white rounded-xl border border-slate-100 p-3 cursor-pointer hover:shadow-md transition-all">
+                            <div class="w-16 h-16 rounded-lg flex-shrink-0 flex items-center justify-center" :class="post.gradient">
+                                <span class="text-2xl">{{ post.emoji }}</span>
+                            </div>
+                            <div>
+                                <p class="font-bold text-sm text-slate-800 leading-snug line-clamp-2">{{ post.title }}</p>
+                                <p class="text-[10px] text-slate-400 mt-1">{{ post.readTime }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button @click="navigateTo('home'); selectedPost=null; selectedDevice=null" class="mt-8 w-full py-3 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition-colors">
+                    Browse All Products →
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== ABOUT ===== -->
+        <div v-if="currentPage === 'about'" class="max-w-2xl mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-6 font-display">About GearNest</h1>
+            <div class="prose">
+                <p>GearNest is Nigeria's independent tech review and product comparison platform. We are dedicated to helping consumers make informed purchasing decisions by providing detailed, unbiased specifications, honest reviews, and real market prices for smartphones, laptops, and tablets.</p>
+                <h2>Our Mission</h2>
+                <p>We believe every Nigerian consumer deserves access to clear, accurate tech information before spending their hard-earned money. Our team of tech enthusiasts researches, tests, and documents the latest devices available in the Nigerian market — from budget-friendly options to flagship powerhouses.</p>
+                <h2>What We Cover</h2>
+                <ul>
+                    <li><strong>Smartphones</strong> – Detailed specs, camera performance, battery life, and value-for-money analysis</li>
+                    <li><strong>Laptops</strong> – Performance benchmarks, build quality, display quality, and price comparisons</li>
+                    <li><strong>Tablets</strong> – Productivity assessments, display ratings, and use-case recommendations</li>
+                    <li><strong>Accessories</strong> – Earbuds, smartwatches, chargers, and more</li>
+                </ul>
+                <h2>Our Editorial Standards</h2>
+                <p>GearNest maintains strict editorial independence. We do not accept payments from manufacturers to influence our reviews. Prices displayed are sourced from major Nigerian retailers and are updated regularly. Affiliate links may be used, which help support the site at no extra cost to you.</p>
+                <h2>Contact Us</h2>
+                <p>Have a question or correction? <button @click="navigateTo('contact')" class="text-blue-600 underline">Reach out to us</button>.</p>
+            </div>
+        </div>
+
+        <!-- ===== PRIVACY ===== -->
+        <div v-if="currentPage === 'privacy'" class="max-w-2xl mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-2 font-display">Privacy Policy</h1>
+            <p class="text-xs text-slate-400 mb-6">Last updated: June 2025</p>
+            <div class="prose">
+                <p>GearNest operates the website gearnested.web.app. This page informs you of our policies regarding the collection, use, and disclosure of personal data when you use our service.</p>
+                <h2>Information We Collect</h2>
+                <ul>
+                    <li><strong>Usage Data:</strong> We automatically collect information on how the site is accessed anonymously.</li>
+                    <li><strong>Cookies:</strong> We use cookies and similar tracking technologies to track activity on our site.</li>
+                    <li><strong>Contact Information:</strong> If you contact us, we retain your details solely to respond to your inquiry.</li>
+                </ul>
+                <h2>Google AdSense & Third-Party Advertising</h2>
+                <p>GearNest uses Google AdSense to display advertisements. Google may use cookies to serve ads based on your prior visits. You can opt out at <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener">Google Ad Settings</a>.</p>
+                <h2>Data Security</h2>
+                <p>We do not sell, trade, or rent your personal information to others.</p>
+                <h2>Contact Us</h2>
+                <p>Questions? <button @click="navigateTo('contact')" class="text-blue-600 underline">Contact us</button>.</p>
+            </div>
+        </div>
+
+        <!-- ===== TERMS ===== -->
+        <div v-if="currentPage === 'terms'" class="max-w-2xl mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-2 font-display">Terms of Service</h1>
+            <p class="text-xs text-slate-400 mb-6">Last updated: June 2025</p>
+            <div class="prose">
+                <p>By accessing GearNest you accept these Terms of Service.</p>
+                <h2>1. Use of the Site</h2>
+                <p>GearNest is for informational purposes only. Prices are indicative — always verify with the retailer before purchasing.</p>
+                <h2>2. Affiliate Disclosure</h2>
+                <p>GearNest may contain affiliate links. We may earn a small commission at no extra cost to you. Our editorial content is never influenced by affiliate relationships.</p>
+                <h2>3. Intellectual Property</h2>
+                <p>All content on GearNest is protected by applicable intellectual property laws.</p>
+                <h2>4. Governing Law</h2>
+                <p>These terms are governed by the laws of the Federal Republic of Nigeria.</p>
+            </div>
+        </div>
+
+        <!-- ===== CONTACT ===== -->
+        <div v-if="currentPage === 'contact'" class="max-w-lg mx-auto py-8">
+            <h1 class="text-3xl font-black text-slate-900 mb-2 font-display">Contact Us</h1>
+            <p class="text-slate-500 mb-8 text-sm">Have a question, correction, or want to partner with us?</p>
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Your Name</label>
+                    <input v-model="contactForm.name" type="text" placeholder="e.g. Chidi Okafor" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Email Address</label>
+                    <input v-model="contactForm.email" type="email" placeholder="you@example.com" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1">Message</label>
+                    <textarea v-model="contactForm.message" rows="4" placeholder="Tell us how we can help…" class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-500 outline-none text-sm bg-slate-50 focus:bg-white resize-none"></textarea>
+                </div>
+                <div v-if="contactSent" class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm font-semibold">✓ Message sent! We'll reply within 48 hours.</div>
+                <button @click="submitContact" class="w-full bg-blue-600 text-white py-3 rounded-xl font-black uppercase tracking-wider text-sm hover:bg-blue-700 transition-colors">Send Message</button>
+                <div class="pt-2 border-t border-slate-100 flex items-center gap-3 text-sm text-slate-500">
+                    <span>Or chat on <a href="https://wa.me/2349132720329" target="_blank" class="text-green-600 font-semibold">WhatsApp</a></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== DEVICE DETAIL ===== -->
+        <transition name="slide-up">
+            <div v-if="selectedDevice" class="fixed inset-0 z-[100] bg-white overflow-y-auto detail-content">
+                <nav class="sticky top-0 bg-white/90 backdrop-blur-md border-b px-4 py-3 flex justify-between items-center z-10">
+                    <button @click="closeDetails" class="p-2 hover:bg-slate-100 rounded-full"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+                    <span class="font-bold text-xs uppercase tracking-widest text-slate-500">Device Specs</span>
+                    <div class="w-10"></div>
+                </nav>
+                <div class="container mx-auto max-w-4xl px-4 py-4">
+                    <div class="ad-slot h-16 mb-4 w-full">
+                        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="h-64 md:h-80 bg-slate-50 rounded-2xl flex items-center justify-center p-6 border border-slate-100">
+                                <img :src="activeImage" :alt="selectedDevice.name" class="max-h-full object-contain">
+                            </div>
+                            <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
+                                <button v-for="img in selectedDevice.images" :key="img" @click="activeImage = img"
+                                        :class="{'ring-2 ring-blue-600 opacity-100': activeImage === img, 'opacity-50': activeImage !== img}"
+                                        class="w-16 h-16 flex-shrink-0 bg-white border border-slate-200 rounded-lg p-1 transition-all">
+                                    <img :src="img" class="w-full h-full object-contain">
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-blue-600 uppercase tracking-tighter">{{ selectedDevice.category }}</span>
+                            <h1 class="detail-title text-3xl font-black text-slate-900 mb-2 font-display">{{ selectedDevice.name }}</h1>
+                            <p class="detail-price text-2xl font-bold text-slate-900 mb-4">₦{{ selectedDevice.price }}</p>
+                            <div v-if="selectedDevice.description" class="text-sm text-slate-600 leading-relaxed mb-6 p-4 bg-slate-50 rounded-xl border border-slate-100">{{ selectedDevice.description }}</div>
+                            <h3 class="text-[11px] font-black uppercase text-slate-400 mb-3">Core Specifications</h3>
+                            <div class="space-y-2 mb-6">
+                                <div v-for="(val, key) in selectedDevice.specs" class="flex justify-between p-2.5 bg-slate-50 rounded-lg text-sm border border-slate-100">
+                                    <span class="text-slate-500 capitalize font-medium">{{ key }}</span>
+                                    <span class="font-bold text-slate-800 text-right max-w-[55%]">{{ val }}</span>
+                                </div>
+                            </div>
+                            <a href="https://wa.me/2349132720329" target="_blank" class="flex items-center justify-center gap-2 w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-black text-sm uppercase tracking-wider transition-colors">
+                                <i data-lucide="message-circle" class="w-4 h-4"></i> Enquire on WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                    <div class="my-8 w-full">
+                        <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+                    </div>
+                    <div class="mt-4">
+                        <h3 class="font-black text-lg text-slate-900 mb-4 font-display">Related Devices</h3>
+                        <div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                            <div v-for="related in getRelated(selectedDevice)" :key="related.id" @click="openDetails(related)" class="w-40 flex-shrink-0 cursor-pointer group">
+                                <div class="aspect-square bg-slate-50 rounded-xl p-3 mb-2 flex items-center justify-center border border-slate-100 group-hover:border-blue-200 transition-all">
+                                    <img :src="related.images[0]" :alt="related.name" class="max-h-full object-contain">
+                                </div>
+                                <p class="text-xs font-bold text-slate-800 truncate">{{ related.name }}</p>
+                                <p class="text-xs text-blue-600 font-bold">₦{{ related.price }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-100 mt-12">
+        <div class="container mx-auto px-4 py-8">
+            <div v-if="currentPage === 'home' || currentPage === 'blog'" class="mb-6 w-full">
+                <ins class="adsbygoogle" style="display:block" data-ad-client="ca-pub-3059181513838739" data-ad-slot="9661309118" data-ad-format="auto" data-full-width-responsive="true"></ins>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div class="col-span-2 md:col-span-1">
+                    <div class="text-xl font-black text-blue-700 tracking-tighter mb-2 font-display">GEARNEST</div>
+                    <p class="text-xs text-slate-500 leading-relaxed">Nigeria's trusted source for unbiased tech reviews and fair pricing.</p>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black uppercase tracking-widest text-slate-700 mb-3">Browse</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button @click="activeFilter='Phones'; navigateTo('home')" class="hover:text-blue-600">Phones</button></li>
+                        <li><button @click="activeFilter='Laptops'; navigateTo('home')" class="hover:text-blue-600">Laptops</button></li>
+                        <li><button @click="activeFilter='Tablets'; navigateTo('home')" class="hover:text-blue-600">Tablets</button></li>
+                        <li><button @click="navigateTo('blog'); selectedPost=null" class="hover:text-blue-600">Blog</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black uppercase tracking-widest text-slate-700 mb-3">Company</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button @click="navigateTo('about'); selectedDevice=null" class="hover:text-blue-600">About Us</button></li>
+                        <li><button @click="navigateTo('contact'); selectedDevice=null" class="hover:text-blue-600">Contact</button></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-xs font-black uppercase tracking-widest text-slate-700 mb-3">Legal</h4>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li><button @click="navigateTo('privacy'); selectedDevice=null" class="hover:text-blue-600">Privacy Policy</button></li>
+                        <li><button @click="navigateTo('terms'); selectedDevice=null" class="hover:text-blue-600">Terms of Service</button></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="pt-6 border-t border-slate-100 flex flex-col md:flex-row justify-between items-center gap-3">
+                <p class="text-xs text-slate-400">© 2025 GearNest. All rights reserved. Prices are indicative and may vary.</p>
+                <div class="flex gap-4 text-xs text-slate-400">
+                    <button @click="navigateTo('privacy')" class="hover:text-slate-600">Privacy</button>
+                    <button @click="navigateTo('terms')" class="hover:text-slate-600">Terms</button>
+                    <button @click="navigateTo('contact')" class="hover:text-slate-600">Contact</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <a href="https://wa.me/2349132720329" target="_blank" class="fixed bottom-6 right-6 bg-green-500 text-white p-3.5 rounded-full shadow-2xl z-50 hover:scale-110 active:scale-95 transition-all">
+        <i data-lucide="message-circle" class="w-6 h-6"></i>
+    </a>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, setDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const { createApp, ref, computed, onMounted, nextTick } = Vue;
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCtj7-YA1S8FlWS6MCNwGUezEuXnkdj84U",
+        authDomain: "gearnested.firebaseapp.com",
+        projectId: "gearnested",
+        storageBucket: "gearnested.firebasestorage.app",
+        messagingSenderId: "114468029326",
+        appId: "1:114468029326:web:be9cb0c5bca48ce54bdadf",
+        measurementId: "G-YLHL3PXKQP"
+    };
+    const firebaseApp = initializeApp(firebaseConfig);
+    const db = getFirestore(firebaseApp);
+
+    const trackPageView = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            await setDoc(doc(db, "traffic", today), { date: today, pageViews: increment(1), lastSeen: serverTimestamp() }, { merge: true });
+            await setDoc(doc(db, "traffic", "__total__"), { pageViews: increment(1), visitors: increment(1) }, { merge: true });
+        } catch (e) {}
+    };
+    const trackProductView = async (productId, productName) => {
+        try {
+            await setDoc(doc(db, "productViews", productId), { productId, name: productName, views: increment(1), lastViewed: serverTimestamp() }, { merge: true });
+        } catch (e) {}
+    };
+
+    // ── Blog posts data ────────────────────────────────────────────────────────
+    const BLOG_POSTS = [
+      {
+        id: 'best-phones-under-200k-nigeria-2025',
+        title: 'Best Smartphones Under ₦200,000 in Nigeria (2025)',
+        excerpt: 'You don\'t need to spend over ₦1 million to get a great smartphone in Nigeria. We\'ve tested and ranked the best phones delivering the most value under ₦200,000 this year.',
+        category: 'Buying Guide', author: 'GearNest Editorial', date: 'May 20, 2025', readTime: '8 min read',
+        emoji: '📱', gradient: 'from-blue-500 to-indigo-600',
+        content: `
+          <p>The Nigerian smartphone market in 2025 is more competitive than ever. With the naira stabilizing somewhat and brands like Infinix, Tecno, and Xiaomi aggressively targeting the mid-range segment, there has never been a better time to get serious smartphone performance without emptying your bank account.</p>
+          <p>After hands-on testing and extensive research into prices at major Nigerian retailers including Slot, Pointek, and online platforms like Jumia and Konga, here are the best smartphones you can buy under ₦200,000 in Nigeria right now.</p>
+          <h2>1. Infinix NOTE 40 Pro+ — Best Overall (₦185,000)</h2>
+          <p>The Infinix NOTE 40 Pro+ is our top pick in this price range, and it's not particularly close. Infinix has absolutely nailed this device. You get a stunning 6.78-inch AMOLED 144Hz display that looks genuinely premium, a 108MP main camera that produces impressive shots in good lighting, and — most remarkably — both 100W wired and wireless charging support.</p>
+          <p>The Helio G99 Ultimate processor handles everyday tasks, social media, and even some gaming with ease. Our battery life tests showed the 5000mAh cell lasting nearly two full days of moderate use. At ₦185,000, the NOTE 40 Pro+ represents extraordinary value.</p>
+          <ul>
+            <li><strong>Best for:</strong> Power users who want flagship features on a budget</li>
+            <li><strong>Display:</strong> 6.78" AMOLED, 144Hz refresh rate</li>
+            <li><strong>Camera:</strong> 108MP main + AI-enhanced portrait mode</li>
+            <li><strong>Battery:</strong> 5000mAh with 100W fast charging</li>
+          </ul>
+          <h2>2. Realme GT 6T 5G — Best for Gaming (₦195,000)</h2>
+          <p>If mobile gaming is a priority, the Realme GT 6T 5G is the phone to beat under ₦200k. Powered by the Snapdragon 7+ Gen 3 — a chip that punches well above its weight class — this phone handles graphics-intensive games like PUBG Mobile and Genshin Impact at high settings without breaking a sweat.</p>
+          <p>The 144Hz AMOLED display is smooth and responsive, making gaming feel incredibly fluid. The 5500mAh battery with 120W charging means you can top up from zero to full in under 20 minutes. For gamers in Nigeria, this is a no-brainer.</p>
+          <ul>
+            <li><strong>Best for:</strong> Mobile gamers</li>
+            <li><strong>Processor:</strong> Snapdragon 7+ Gen 3</li>
+            <li><strong>Display:</strong> 6.78" AMOLED, 144Hz</li>
+            <li><strong>Charging:</strong> 5500mAh + 120W HyperCharge</li>
+          </ul>
+          <h2>3. Tecno CAMON 20 Pro 5G — Best Camera (₦195,000–₦210,000)</h2>
+          <p>Tecno has quietly built one of the best camera phones in the sub-₦250,000 segment. The CAMON 20 Pro 5G features a 64MP RGBW sensor — a unique setup that captures more light than traditional RGB sensors, resulting in noticeably brighter and cleaner low-light photos.</p>
+          <p>If you're someone who documents life constantly — events, outings, content creation — the CAMON 20 Pro 5G delivers results that would embarrass phones costing twice as much. The 5G connectivity also future-proofs your purchase as Nigerian telecos continue rolling out 5G networks.</p>
+          <h2>Verdict</h2>
+          <p>The sub-₦200,000 segment in Nigeria has never been this strong. Whether you prioritize battery life, gaming, or photography, there's a device that delivers genuine flagship-adjacent performance at a fraction of the cost. Our top recommendation remains the Infinix NOTE 40 Pro+ for most users — its combination of fast charging, display quality, and camera capabilities is simply unmatched at the price.</p>
+          <blockquote>Always buy from authorized retailers to ensure warranty coverage. Check Slot, Pointek, or official brand stores for the most reliable purchasing experience.</blockquote>
+        `
+      },
+      {
+        id: 'samsung-vs-iphone-nigeria-2025',
+        title: 'Samsung vs iPhone: Which Should You Buy in Nigeria?',
+        excerpt: 'The eternal debate finally settled for Nigerian consumers. We break down real-world performance, value, after-sales support, and long-term reliability.',
+        category: 'Comparison', author: 'GearNest Editorial', date: 'May 15, 2025', readTime: '10 min read',
+        emoji: '⚔️', gradient: 'from-slate-700 to-slate-900',
+        content: `
+          <p>Walk into any phone shop in Lagos, Abuja, or Port Harcourt and you'll inevitably face this question: Samsung or iPhone? It's a debate that's been raging for over a decade, but the answer in Nigeria comes with some unique twists that don't apply in other markets. Let's break it all down.</p>
+          <h2>Price & Value for Money</h2>
+          <p>This is where the conversation gets real for most Nigerians. The iPhone 15 Pro Max starts at around ₦1,450,000, while the Samsung Galaxy S24 Ultra comes in at ₦1,250,000. Both are significant investments, but the Samsung gives you more hardware on paper — a 200MP camera, built-in S Pen stylus, and a larger display.</p>
+          <p>For budget-conscious buyers, Samsung's mid-range lineup (Galaxy A series) is far stronger. The Samsung Galaxy A55 5G at ₦320,000 offers capabilities that would cost nearly ₦700,000 if you were to find an equivalent iPhone. Apple simply doesn't compete in the mid-range segment.</p>
+          <h2>Software & Updates</h2>
+          <p>Apple wins decisively here. iPhones receive major iOS updates for 6–7 years. The iPhone 14 released in 2022 still receives current iOS 17 updates in 2025. Samsung has improved dramatically — Galaxy S24 phones get 7 years of updates — but older Samsung mid-range phones often stop receiving updates after 2–3 years.</p>
+          <p>Apple's software optimization also means that a 3-year-old iPhone often runs smoother than a newer Android phone on paper with more RAM. iOS 17 runs beautifully even on iPhone 13 models.</p>
+          <h2>Camera Performance in Nigerian Conditions</h2>
+          <p>Both are exceptional, but they have different strengths. The iPhone 15 Pro Max's computational photography produces the most natural-looking photos with excellent skin tone reproduction — important for portraits. Samsung's 200MP sensor captures extraordinary detail and is more versatile.</p>
+          <p>For video creators — a growing profession in Nigeria — iPhone remains the gold standard. Nigerian content creators on YouTube and Instagram overwhelmingly prefer iPhone for its consistent, broadcast-quality video output with Cinematic Mode.</p>
+          <h2>After-Sales Support in Nigeria</h2>
+          <p>This is a critical consideration. Samsung has significantly more service centres across Nigeria. In Lagos alone, there are multiple authorized Samsung service centres. Apple has no official Apple Stores in Nigeria — repairs require sending phones abroad or using third-party technicians, which can void warranties.</p>
+          <p>If your phone develops a fault, getting a Samsung repaired in Nigeria is dramatically easier and cheaper than an iPhone.</p>
+          <h2>Our Verdict</h2>
+          <p><strong>Choose iPhone if:</strong> You prioritize software longevity, video quality, ecosystem integration (MacBook, iPad), and don't mind the premium price and limited local repair options.</p>
+          <p><strong>Choose Samsung if:</strong> You want more hardware value per naira, local repair accessibility, a stronger mid-range selection, and the flexibility of Android customization.</p>
+          <p>For most Nigerian consumers, Samsung's combination of competitive pricing, local support, and strong hardware makes it the pragmatic choice. But if budget isn't a concern and you're already in the Apple ecosystem, the iPhone experience remains uniquely polished.</p>
+        `
+      },
+      {
+        id: 'best-laptops-students-nigeria-2025',
+        title: 'Top 5 Laptops for Nigerian University Students in 2025',
+        excerpt: 'Finding the right laptop for UNILAG, UI, or ABU? We cover the best options that balance performance, battery life, and durability for Nigerian student life.',
+        category: 'Buying Guide', author: 'GearNest Editorial', date: 'May 10, 2025', readTime: '7 min read',
+        emoji: '💻', gradient: 'from-emerald-500 to-teal-600',
+        content: `
+          <p>University life in Nigeria is demanding. Between lectures, assignments, research papers, and the occasional load-shedding situation, your laptop needs to be reliable, portable, and capable enough to handle everything from Microsoft Office to programming assignments. Here are the best laptops for Nigerian university students in 2025.</p>
+          <h2>What Nigerian Students Need</h2>
+          <p>Before jumping to recommendations, let's understand the unique needs of Nigerian students. Irregular power supply means battery life is non-negotiable — you need a laptop that can handle 8+ hours without a charge. Weight matters because you're carrying it to campus daily. And durability is crucial because laptops in Nigerian conditions — dust, heat, occasional bumps — face real challenges.</p>
+          <h2>1. HP Pavilion 15 — Best Overall for Students (₦420,000)</h2>
+          <p>HP's Pavilion 15 is our top recommendation for most Nigerian students. The AMD Ryzen 7 processor handles everything from code compilation to video editing with ease. The 15.6-inch FHD display is bright enough for outdoor use, and battery life hits 7–9 hours in real-world conditions.</p>
+          <p>HP laptops also have decent local support in Nigeria, with service centres in Lagos, Abuja, and Port Harcourt. For engineering, computer science, and business students, this is the laptop to beat.</p>
+          <h2>2. Dell Inspiron 15 — Best Budget Pick (₦310,000)</h2>
+          <p>If budget is tight, the Dell Inspiron 15 is a trustworthy workhorse. It's been Nigeria's go-to budget laptop for years, and for good reason. The Intel Core i3 handles Microsoft Office, PDF editing, research, and web browsing without issue.</p>
+          <p>Dell also has excellent local support in Nigeria, and spare parts are widely available. For humanities, law, and social sciences students who don't need heavy processing power, the Inspiron 15 is a smart, cost-effective choice.</p>
+          <h2>3. Apple MacBook Air M2 — Best for Design & Media Students (₦1,050,000)</h2>
+          <p>Yes, it's expensive. But for students studying graphic design, architecture, film production, or music — the MacBook Air M2 is transformative. The M2 chip's performance is genuinely remarkable, handling Final Cut Pro, Adobe Creative Suite, and Ableton Live with resources to spare.</p>
+          <p>The 18-hour battery life is a game-changer in a Nigerian context where power is unreliable. Many design students who invested in the MacBook Air M2 report it paying for itself within a year through freelance work enabled by the machine's professional capabilities.</p>
+          <h2>4. Lenovo IdeaPad Gaming 3i — Best for CS Students (₦620,000)</h2>
+          <p>Computer science and engineering students who also enjoy gaming will find the IdeaPad Gaming 3i a compelling choice. The RTX 3050 GPU accelerates machine learning tasks, 3D rendering, and simulation software — tools increasingly used in Nigerian tech education.</p>
+          <h2>5. Acer Swift Go 14 — Best Ultrabook for Portability (₦550,000)</h2>
+          <p>For students who prioritize portability above all, the Acer Swift Go 14 is exceptional. At 1.35kg it's easy to carry all day, and the OLED display produces gorgeous visuals. The AMD Ryzen AI processor delivers 17 hours of battery life — enough to survive a full day of lectures and an evening study session without finding a socket.</p>
+          <h2>Key Tips for Nigerian Students Buying a Laptop</h2>
+          <ul>
+            <li>Always buy from authorized dealers with a verifiable warranty — avoid "Belgium grade" laptops</li>
+            <li>Get a good surge protector — Nigerian power can damage laptops without one</li>
+            <li>Buy at least 8GB RAM — 4GB is insufficient for modern tasks</li>
+            <li>SSD storage is non-negotiable; traditional HDD laptops are far too slow in 2025</li>
+          </ul>
+        `
+      },
+      {
+        id: 'iphone-15-pro-max-review-nigeria',
+        title: 'iPhone 15 Pro Max Full Review: Is It Worth ₦1.4M in Nigeria?',
+        excerpt: 'Apple\'s most powerful iPhone ever — but is the price justifiable for Nigerian buyers? We test it extensively over 30 days.',
+        category: 'Review', author: 'GearNest Editorial', date: 'May 5, 2025', readTime: '12 min read',
+        emoji: '🍎', gradient: 'from-gray-800 to-gray-950',
+        content: `
+          <p>The iPhone 15 Pro Max is Apple's most capable smartphone ever made, featuring the revolutionary A17 Pro chip, a titanium frame, and the most sophisticated camera system Apple has ever put in a phone. At ₦1,450,000, it's also one of the most expensive. After 30 days of daily use in Lagos, here's our complete assessment.</p>
+          <h2>Design & Build Quality</h2>
+          <p>The titanium frame is a genuine upgrade from last year's stainless steel. The iPhone 15 Pro Max feels noticeably lighter in hand despite its large 6.7-inch size — a welcome change. The Action Button replaces the mute switch and can be customized to launch the camera, torch, voice memos, or any shortcut you set. We found ourselves using it constantly for quick camera access.</p>
+          <p>The USB-C switch from Lightning is significant for Nigerian users — you can now use the same cable for your MacBook, iPad, and iPhone. The cable supports up to 10Gbps transfer speeds, making it genuinely useful for photographers transferring large video files.</p>
+          <h2>Camera: A Genuine Leap Forward</h2>
+          <p>The 48MP main sensor, 12MP ultra-wide, and 12MP 5x telephoto create a camera system that is genuinely class-leading. Portrait Mode on the iPhone 15 Pro Max is the best we've seen on any smartphone — skin tones are preserved accurately, depth separation is natural, and the computational photography processing is invisible.</p>
+          <p>The 5x optical zoom (equivalent to 120mm) brings distant subjects dramatically closer without quality loss. At a Lagos outdoor event, we captured faces from across a large hall with clarity that surprised even professional photographers we showed the results to.</p>
+          <p>ProRes video recording at 4K/60fps produces broadcast-quality footage. Nigerian content creators and videographers will find this capability genuinely professional — and it opens up commercial work that previously required dedicated cameras.</p>
+          <h2>Performance</h2>
+          <p>The A17 Pro chip is the fastest mobile processor ever tested. In day-to-day use, the phone never stutters, hesitates, or shows any sign of strain regardless of what you throw at it. Gaming, video editing, heavy multitasking — it handles everything with remarkable ease.</p>
+          <p>More meaningfully, this chip will power this phone comfortably for 5–6 years of use. Buying an iPhone 15 Pro Max in 2025 is an investment that will serve you well into the early 2030s.</p>
+          <h2>Battery Life: Better Than Expected</h2>
+          <p>Apple claims "best battery life ever in an iPhone" and we can confirm this holds up. On a typical Lagos day — social media, email, WhatsApp, two hours of music streaming, some photography, and 30 minutes of video — we consistently finished the day with 30–40% remaining. That's impressive for a phone this powerful.</p>
+          <h2>The Nigeria-Specific Verdict</h2>
+          <p>At ₦1,450,000, the iPhone 15 Pro Max is undeniably expensive. But here's the honest assessment: if you can afford it and you're serious about photography, video production, or simply want the best possible smartphone experience with 6+ years of support, it delivers exceptional value over its lifespan.</p>
+          <p>The absence of official Apple service centres in Nigeria remains the biggest drawback. If something goes wrong, repairs are complicated and expensive. Buy from a trusted dealer who provides warranty support.</p>
+          <p><strong>Rating: 9.2/10</strong> — The best smartphone money can buy in Nigeria, with the caveat that its price and repair limitations require careful consideration.</p>
+        `
+      },
+      {
+        id: 'protect-phone-nigeria-tips',
+        title: '10 Essential Tips to Protect Your Smartphone in Nigeria',
+        excerpt: 'From power surge protection to humidity damage and theft prevention — practical advice every Nigerian smartphone owner needs.',
+        category: 'Tips & Advice', author: 'GearNest Editorial', date: 'April 28, 2025', readTime: '6 min read',
+        emoji: '🛡️', gradient: 'from-orange-500 to-red-600',
+        content: `
+          <p>Nigeria presents unique challenges for smartphone owners. Erratic power supply, tropical humidity, dusty harmattan conditions, and unfortunately high theft rates all threaten your investment. Here are ten essential tips to protect your smartphone and get the most years of use from it.</p>
+          <h2>1. Always Use a Quality Surge Protector</h2>
+          <p>This is the single most important piece of advice on this list. NEPA/PHCN power surges are real and they destroy phone charging circuits regularly. Invest in a quality surge protector — not the cheapest power strip, but a genuine surge protector from brands like APC or Belkin, available at Slot and Computer Village for ₦5,000–₦15,000. It could save your ₦300,000+ phone.</p>
+          <h2>2. Avoid Charging with NEPA Power Restoration</h2>
+          <p>When power comes back after an outage, there's often a voltage spike. Many Nigerians have damaged their phones by leaving them plugged in during these transitions. Either unplug before expected restoration times or use a UPS/inverter system that regulates voltage.</p>
+          <h2>3. Use a Proper Case and Screen Protector</h2>
+          <p>This sounds obvious, but many Nigerians avoid cases because they prefer the feel of the bare phone. The cost of a quality case (₦2,000–₦8,000) versus a screen replacement (₦20,000–₦80,000) makes this an easy calculation. Choose a case with good drop protection, not just a thin sleeve.</p>
+          <h2>4. Never Leave Your Phone in a Hot Car</h2>
+          <p>Nigerian weather is hot, and cars parked in the sun can reach dangerous temperatures. Lithium batteries degrade rapidly above 35°C and can swell or fail completely when exposed to extreme heat for extended periods. Never leave your phone on a car dashboard or seat in direct sunlight.</p>
+          <h2>5. Protect Against Harmattan Dust</h2>
+          <p>During harmattan season, fine dust gets everywhere — including into phone ports and speakers. Keep your phone in a closed case or bag when not in use. Use compressed air (available at photography shops) to gently clean out charging ports before issues develop.</p>
+          <h2>6. Enable Find My Device Immediately</h2>
+          <p>Whether you use Android (Google Find My Device) or iPhone (Find My), activate this feature the moment you buy a new phone. In the unfortunate event of theft, this gives you the ability to locate, lock, or remotely wipe your device. Many Nigerians have recovered stolen phones using this feature.</p>
+          <h2>7. Use a Strong PIN or Biometric Lock</h2>
+          <p>A 6-digit PIN, fingerprint, or face unlock is your first line of defence against someone accessing your banking apps if your phone is stolen. Avoid obvious PINs like birth dates. Enable auto-lock after 30 seconds of inactivity.</p>
+          <h2>8. Back Up Regularly</h2>
+          <p>Enable automatic cloud backup — Google Photos for Android, iCloud for iPhone. Many Nigerians lose years of photos and contacts when phones are damaged or stolen. Cloud backup is free (to a reasonable limit) and takes seconds to set up.</p>
+          <h2>9. Avoid Charging Overnight Frequently</h2>
+          <p>Consistently charging to 100% and leaving it plugged in overnight degrades battery capacity over time. Most modern phones have charge management settings — on iPhone, enable "Optimized Battery Charging" in Settings. Try to keep your phone between 20–80% for longest battery lifespan.</p>
+          <h2>10. Buy from Authorized Dealers Only</h2>
+          <p>The grey market for phones in Nigeria is massive, but buying unauthorized devices means no warranty protection and often no guarantee that the phone hasn't been previously damaged, repaired, or sold with altered software. Spend a little more at authorized dealers — it's significantly cheaper than the repairs you'll face otherwise.</p>
+        `
+      },
+      {
+        id: 'macbook-air-m2-review-nigeria',
+        title: 'MacBook Air M2 Review: The Best Laptop for Nigerian Professionals?',
+        excerpt: 'Silent, powerful, and with 18-hour battery life — we test the M2 MacBook Air across 6 weeks of Nigerian working conditions.',
+        category: 'Review', author: 'GearNest Editorial', date: 'April 20, 2025', readTime: '9 min read',
+        emoji: '🦋', gradient: 'from-purple-500 to-pink-600',
+        content: `
+          <p>The MacBook Air M2 has been available for a couple of years now, and its reputation only keeps growing. At ₦1,050,000, it's a serious investment for Nigerian professionals — but after six weeks of daily use across Lagos work environments, frequent power cuts, and demanding creative tasks, we're ready to give our verdict.</p>
+          <h2>What Makes the M2 MacBook Air Special</h2>
+          <p>The story of the MacBook Air M2 is primarily about two things: performance and battery life. The Apple M2 chip — built on a 5-nanometre process — delivers performance that rivals Intel Core i9 laptops of two years ago, but without any fan, meaning it operates in complete silence. Always.</p>
+          <p>This matters more than it sounds. The absence of a fan means no thermal throttling — the laptop performs at full speed consistently, whether you're editing video or writing a document. In a Nigeria context, where laptops often overheat in warm offices, this is a significant advantage.</p>
+          <h2>Battery Life: A Nigerian Game-Changer</h2>
+          <p>Apple claims 18 hours of battery life. In real-world Nigerian testing — a mix of Google Docs, browser with multiple tabs, Zoom calls, and music streaming — we consistently achieved 14–16 hours. On lighter days (mostly writing and email), we hit 18 hours.</p>
+          <p>What does this mean practically? You can leave home at 7am, work through the day at an office where NEPA comes and goes, attend evening meetings, and return home with battery remaining. The MacBook Air M2 has essentially eliminated range anxiety for many Nigerian laptop users.</p>
+          <h2>Display & Design</h2>
+          <p>The 13.6-inch Liquid Retina display is gorgeous — 500 nits of brightness, excellent colour accuracy, and enough resolution (2560x1664) that text and images look crisp. The MagSafe charging port returns, which is a relief — it saved the laptop from falling twice when people walked past the cable.</p>
+          <p>At 1.24kg, it's genuinely light enough to carry in a small bag without strain. The midnight colour option has shown minor fingerprint resistance issues in our testing — the starlight option is more practical.</p>
+          <h2>Performance for Nigerian Professionals</h2>
+          <p>For the core use cases of Nigerian white-collar professionals — Microsoft Office, Google Workspace, Zoom, Slack, accounting software, basic photo editing — the MacBook Air M2 is dramatically overpowered. It handles these tasks so effortlessly that using it feels almost unfair.</p>
+          <p>For creatives — video editors, designers, architects, music producers — the M2's performance is transformative. Final Cut Pro renders 4K video in real time. Adobe Lightroom processes RAW files instantly. Architects using Lumion and Revit report smooth performance that Windows laptops at double the price struggle to match.</p>
+          <h2>The Verdict</h2>
+          <p>The MacBook Air M2 is arguably the best laptop ever made for Nigerian professionals. Its combination of silent performance, industry-leading battery life, and build quality addresses the specific frustrations of working in Nigeria — power instability, heat, and the need for a reliable workhorse.</p>
+          <p>At ₦1,050,000 it requires genuine financial planning, but for professionals whose work relies on a dependable laptop, the investment pays dividends. This machine will serve you excellently for 5–7 years.</p>
+          <p><strong>Rating: 9.5/10</strong></p>
+        `
+      },
+      {
+        id: 'best-wireless-earbuds-nigeria-2025',
+        title: 'Best Wireless Earbuds in Nigeria 2025: Ranked & Reviewed',
+        excerpt: 'From premium noise-cancelling to budget picks under ₦15,000 — our complete ranking of wireless earbuds available in Nigeria.',
+        category: 'Accessories', author: 'GearNest Editorial', date: 'April 12, 2025', readTime: '7 min read',
+        emoji: '🎧', gradient: 'from-violet-500 to-purple-700',
+        content: `
+          <p>Wireless earbuds have become essential accessories for Nigerians commuting on BRT buses, working from home, or simply enjoying music during NEPA outages. The market has expanded dramatically — from ₦8,000 budget options to ₦200,000 premium pairs. Here's our ranked list of the best wireless earbuds available in Nigeria in 2025.</p>
+          <h2>Premium Tier (₦80,000 and above)</h2>
+          <h3>1. Apple AirPods Pro 2nd Generation — ₦198,000</h3>
+          <p>The AirPods Pro 2 remain the best earbuds money can buy, period. The active noise cancellation is extraordinary — standing on Lagos Island at rush hour with these in, the city's noise drops to a gentle murmur. Adaptive Audio intelligently blends ANC and transparency based on your environment.</p>
+          <p>Sound quality is rich and detailed without being over-emphasized in bass. For iPhone users, the seamless integration — instant pairing, automatic switching between devices, Siri integration — is unmatched. The case offers 30 hours total battery. Worth every kobo if you're in the Apple ecosystem.</p>
+          <h3>2. Samsung Galaxy Buds2 Pro — ₦98,000</h3>
+          <p>Samsung's flagship earbuds offer 24-bit Hi-Fi audio that audiophiles will appreciate. The ANC performs very close to AirPods Pro quality, and the IPX7 water resistance means sweating through a workout isn't a concern. For Samsung Galaxy phone users, these are the obvious choice.</p>
+          <h2>Mid-Range Tier (₦30,000–₦80,000)</h2>
+          <h3>3. JBL Tune 230NC TWS — ₦45,000</h3>
+          <p>JBL's reputation for powerful, bass-forward sound is well-represented in the Tune 230NC. Active noise cancellation works adequately for office and commuting environments. At ₦45,000, this is the sweet spot for buyers who want genuine ANC without flagship pricing.</p>
+          <h2>Budget Tier (Under ₦30,000)</h2>
+          <h3>4. Oraimo FreePods 4 — ₦12,500</h3>
+          <p>Oraimo has become Nigeria's budget electronics champion, and the FreePods 4 delivers astonishing value. Bluetooth 5.3, touch controls, and 32 hours total battery life at a price point that makes them almost disposable. Sound quality won't satisfy audiophiles, but for calls, podcasts, and casual music listening, they're genuinely good.</p>
+          <p>Available at virtually every phone accessory shop in Nigeria, with an established local warranty process — a significant advantage over imported alternatives.</p>
+          <h2>Buying Tips for Nigerian Consumers</h2>
+          <ul>
+            <li>Avoid "original" earbuds sold outside authorized channels — counterfeits are rampant, especially for AirPods</li>
+            <li>Check IP ratings if you exercise outdoors — sweat damages non-rated earbuds quickly</li>
+            <li>Longer battery life matters more in Nigeria where USB-C charging opportunities may be intermittent</li>
+            <li>Consider case size — you'll be carrying these everywhere</li>
+          </ul>
+        `
+      },
+      {
+        id: 'samsung-galaxy-s24-ultra-review',
+        title: 'Samsung Galaxy S24 Ultra Review: Nigeria\'s Ultimate Android?',
+        excerpt: 'A 200MP camera, built-in S Pen, and titanium frame — we live with Samsung\'s best phone for 45 days across Nigerian conditions.',
+        category: 'Review', author: 'GearNest Editorial', date: 'April 5, 2025', readTime: '11 min read',
+        emoji: '🔬', gradient: 'from-blue-600 to-cyan-500',
+        content: `
+          <p>The Samsung Galaxy S24 Ultra is the most ambitious Android smartphone ever made. A 200-megapixel camera. An integrated S Pen stylus. A titanium frame. Snapdragon 8 Gen 3 — the fastest mobile chip available. AI features woven throughout. And a ₦1,250,000 price tag to match. After 45 days of daily use in Lagos, here's everything you need to know.</p>
+          <h2>Design: Titanium and Glass</h2>
+          <p>Holding the S24 Ultra for the first time is a statement. The titanium frame — shared with the iPhone 15 Pro lineup — feels premium and substantial. At 232 grams it's heavy, but the flat edges make it easier to hold than the curved predecessors. The built-in S Pen silo hasn't changed, but the pen itself is now more accurate with 2.8ms latency.</p>
+          <p>The 6.8-inch QHD+ AMOLED display is genuinely the best screen we've reviewed. 2600 nits peak brightness means it's clearly readable in direct Lagos afternoon sunlight — something we can't say for many competitors. The 120Hz ProMotion makes scrolling buttery smooth.</p>
+          <h2>The 200MP Camera System</h2>
+          <p>Samsung's headline feature deserves scrutiny. The 200MP main sensor doesn't just produce 200-megapixel images — it uses pixel binning to create detailed 12.5MP shots with exceptional dynamic range in default mode. When you deliberately shoot at full 200MP, the detail captured is staggering.</p>
+          <p>The 10x optical zoom periscope telephoto is genuinely useful. During the Lagos State governorship events we photographed, we captured faces of speakers clearly from distances exceeding 20 metres — the kind of capability previously requiring professional telephoto lenses.</p>
+          <p>Night photography impressed us consistently. The multi-frame processing reduces noise while preserving detail, and the dedicated night mode on all cameras — including ultrawide — means you get quality shots in the dim lighting common at Nigerian social events.</p>
+          <h2>S Pen: Underrated Productivity Tool</h2>
+          <p>Many dismiss the S Pen as a novelty, but after 45 days, we find it genuinely useful for specific tasks. Signing documents, sketching quick diagrams in meetings, annotating PDFs, and taking handwritten notes that convert to text — these use cases add real value for business users.</p>
+          <p>AI-powered features like Circle to Search — where you circle anything on screen to search for it — work surprisingly well and feel genuinely useful rather than gimmicky.</p>
+          <h2>Battery Life & Charging</h2>
+          <p>The 5000mAh battery comfortably lasts a full Nigerian working day — typically 6–7 hours of screen-on time before needing a charge. The 45W wired charging gets to 65% in 30 minutes. Notably, Samsung still doesn't include a charger in the box — a cost-saving measure that feels stingy at this price point.</p>
+          <h2>Final Verdict</h2>
+          <p>The Samsung Galaxy S24 Ultra is the best Android smartphone available in Nigeria in 2025. It delivers exceptional camera versatility, the unique S Pen capability, a stunning display, and 7 years of guaranteed software updates — all within a premium titanium chassis.</p>
+          <p>At ₦1,250,000, it's a significant investment, but one that delivers on its promises. Samsung's established service centre presence in Nigeria also provides peace of mind that Apple cannot match for local buyers.</p>
+          <p><strong>Rating: 9.4/10</strong> — The definitive Android phone for Nigerians who want the absolute best.</p>
+        `
+      },
+      {
+        id: 'how-to-buy-phone-nigeria-safely',
+        title: 'How to Buy a Genuine Smartphone in Nigeria and Avoid Fakes',
+        excerpt: 'The Nigerian phone market is flooded with counterfeits, refurbished devices sold as new, and grey imports. Here\'s how to protect yourself.',
+        category: 'Tips & Advice', author: 'GearNest Editorial', date: 'March 25, 2025', readTime: '6 min read',
+        emoji: '🔍', gradient: 'from-amber-500 to-orange-600',
+        content: `
+          <p>Nigeria's phone market has a problem. Counterfeit devices, "UK used" phones sold as brand new, grey market imports with voided warranties, and refurbished phones with replaced batteries — all of these are sold openly, often at prices close to genuine retail. Protecting yourself requires knowledge and vigilance.</p>
+          <h2>Buy Only from Authorized Dealers</h2>
+          <p>This is the most important rule. Every major phone brand has authorized dealers in Nigeria. Samsung's authorized dealers include Slot, Samsung Experience Stores, and selected Pointek locations. Apple products should be bought from iStore Nigeria or other Apple Authorized Resellers. Infinix and Tecno have official brand stores in major cities.</p>
+          <p>Buying from an unauthorized seller — even if they're a "trusted" Facebook marketplace vendor or Instagram page — carries significant risk. If something goes wrong, you have no warranty recourse.</p>
+          <h2>Check IMEI Numbers</h2>
+          <p>Every genuine smartphone has a unique IMEI number. Here's how to verify it:</p>
+          <ul>
+            <li>Dial *#06# on any phone to display its IMEI</li>
+            <li>Compare with the IMEI printed on the box</li>
+            <li>Check the IMEI on the manufacturer's website — Samsung, Apple, and others offer IMEI checkers</li>
+            <li>Use imei.info to check if the phone has been reported stolen globally</li>
+          </ul>
+          <h2>Inspect the Box and Packaging</h2>
+          <p>Genuine phone boxes are precisely printed, with clear holograms, QR codes, and seals. Warning signs of counterfeits or tampered devices include: blurry or slightly off-colour printing, broken seals that have been reapplied, missing accessories that should be included, or a box that doesn't quite close perfectly.</p>
+          <h2>Test Before Payment</h2>
+          <p>Any legitimate seller will allow you to test a phone before completing payment. Key things to test:</p>
+          <ul>
+            <li>Insert your SIM and make a call — check that all connectivity works</li>
+            <li>Test the cameras — front and back, video and photo</li>
+            <li>Check the screen for dead pixels in a dark room</li>
+            <li>Test all ports — USB-C, headphone jack if present</li>
+            <li>Check the battery percentage and that it charges normally</li>
+            <li>On Android: Settings → About Phone shows the build date and software version</li>
+          </ul>
+          <h2>Be Suspicious of Prices That Seem Too Good</h2>
+          <p>The Nigerian marketplace is not so inefficient that a genuine iPhone 15 Pro Max will be sold at ₦800,000 when its market price is ₦1,450,000. When a deal seems too good to be true, it almost certainly is. Counterfeit phones have become sophisticated — some are nearly indistinguishable externally but run inferior hardware and software.</p>
+          <h2>Get a Receipt with Warranty Details</h2>
+          <p>Always insist on a printed receipt showing the product name, IMEI, purchase date, and warranty terms. This is your proof of purchase for any warranty claims. Authorized dealers will always provide this — reluctance to give a proper receipt is a red flag.</p>
+        `
+      },
+      {
+        id: 'best-tablets-nigeria-2025',
+        title: 'Best Tablets for Work and Study in Nigeria 2025',
+        excerpt: 'From the iPad Pro M4 to budget Android options — find the right tablet for your Nigerian lifestyle and budget.',
+        category: 'Buying Guide', author: 'GearNest Editorial', date: 'March 18, 2025', readTime: '8 min read',
+        emoji: '📋', gradient: 'from-sky-500 to-blue-600',
+        content: `
+          <p>Tablets have found a genuine niche in Nigerian life. Students use them for digital note-taking and reading textbooks. Professionals use them for presentations and document review. Content creators use them for digital illustration and video editing. And families use them as shared entertainment devices. Here's our guide to the best tablets you can buy in Nigeria in 2025.</p>
+          <h2>Why a Tablet Makes Sense in Nigeria</h2>
+          <p>Beyond the obvious use cases, tablets have a specific advantage in the Nigerian context: they're more portable than laptops, more functional than phones, and high-end tablets like the iPad can genuinely replace a laptop for many users. During power outages, a fully charged tablet provides hours of productivity without needing a power source.</p>
+          <h2>Premium Choice: Apple iPad Air 13" M2 — ₦780,000</h2>
+          <p>The iPad Air 13-inch with M2 chip is our top recommendation for professionals who want iPad Pro capabilities without the Pro price tag. The M2 processor handles everything from complex spreadsheets to video editing. The 13-inch Liquid Retina display is gorgeous for detailed work.</p>
+          <p>Apple Pencil Pro support makes this an exceptional tablet for architects, designers, medical students studying anatomy, and anyone who benefits from precise digital annotation. The Smart Folio keyboard case transforms it into a capable laptop replacement.</p>
+          <h2>Best Value: Samsung Galaxy Tab A9+ — ₦185,000</h2>
+          <p>For buyers who want a large-screen tablet experience without iPad pricing, the Galaxy Tab A9+ is remarkable value. The 11-inch display is bright and clear enough for comfortable reading and video streaming. Snapdragon 695 handles productivity apps, and the quad-speaker Dolby Atmos audio is genuinely impressive.</p>
+          <p>Nigerian students will find this particularly suitable — it handles university-level research, PDF reading, video lectures, and note-taking apps without difficulty. Samsung's DeX mode provides a desktop-like experience when connected to a monitor.</p>
+          <h2>For Content Creators: Lenovo Tab P12 Pro — ₦380,000</h2>
+          <p>The 12.6-inch 2K AMOLED display on the Lenovo Tab P12 Pro is a visual treat. Content creators who need colour-accurate screens for photo and video editing will appreciate the 120Hz refresh and excellent calibration. The optional keyboard case transforms this into a genuine work machine for creative professionals.</p>
+          <h2>Budget Option: Xiaomi Pad 6 — ₦195,000</h2>
+          <p>Xiaomi consistently delivers exceptional hardware value, and the Pad 6 continues that tradition. The 144Hz LCD display is smooth and responsive. Snapdragon 870 handles multitasking efficiently, and the quad-speaker Dolby Atmos audio surpasses what you'd expect at this price point.</p>
+          <h2>Choosing the Right Tablet</h2>
+          <ul>
+            <li><strong>Students:</strong> Samsung Galaxy Tab A9+ or Xiaomi Pad 6 offer the best value</li>
+            <li><strong>Business professionals:</strong> iPad Air M2 with keyboard case rivals a laptop</li>
+            <li><strong>Creative professionals:</strong> iPad Pro M4 or Lenovo Tab P12 Pro</li>
+            <li><strong>Family/entertainment:</strong> Samsung Galaxy Tab A9+ — robust, affordable, family-friendly</li>
+          </ul>
+          <p>Whichever you choose, consider adding a protective case immediately — screen replacements on tablets are significantly more expensive than on phones.</p>
+        `
+      }
+    ];
+
+    createApp({
+        setup() {
+            const devices = ref([]);
+            const searchQuery = ref("");
+            const activeFilter = ref("All");
+            const selectedDevice = ref(null);
+            const activeImage = ref("");
+            const compareMode = ref(false);
+            const compareSelection = ref([]);
+            const showCompareResult = ref(false);
+            const loading = ref(true);
+            const error = ref(false);
+            const currentPage = ref("home");
+            const contactSent = ref(false);
+            const selectedPost = ref(null);
+            const categories = ["All", "Phones", "Laptops", "Tablets", "Accessories"];
+            const contactForm = ref({ name: "", email: "", message: "" });
+            const blogPosts = ref(BLOG_POSTS);
+
+            const refreshIcons = () => { nextTick(() => { if (window.lucide) window.lucide.createIcons(); }); };
+
+            const fetchDevices = async () => {
+                loading.value = true; error.value = false;
+                try {
+                    const snapshot = await getDocs(collection(db, "products"));
+                    devices.value = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+                } catch (err) { error.value = true; }
+                finally { loading.value = false; refreshIcons(); }
+            };
+
+            const filteredDevices = computed(() => devices.value.filter(d => {
+                const s = searchQuery.value.toLowerCase();
+                return (activeFilter.value === "All" || d.category === activeFilter.value) && d.name.toLowerCase().includes(s);
+            }));
+
+            const openDetails = (device) => {
+                selectedDevice.value = device;
+                activeImage.value = device.images[0];
+                document.body.style.overflow = 'hidden';
+                trackProductView(device.id, device.name);
+                refreshIcons();
+            };
+            const closeDetails = () => { selectedDevice.value = null; document.body.style.overflow = 'auto'; };
+            const getRelated = (current) => devices.value.filter(d => d.category === current.category && d.id !== current.id).slice(0, 8);
+            const toggleCompareMode = () => { compareMode.value = !compareMode.value; if (!compareMode.value) compareSelection.value = []; refreshIcons(); };
+            const goHome = () => { navigateTo('home'); selectedDevice.value = null; selectedPost.value = null; };
+
+            // ── URL Router ──────────────────────────────────────────────────
+            const navigateTo = (page, slug) => {
+                currentPage.value = page;
+                let path = '/';
+                if (page === 'blog' && !slug) path = '/blog';
+                else if (page === 'blog' && slug) path = `/blog/${slug}`;
+                else if (page === 'about') path = '/about';
+                else if (page === 'privacy') path = '/privacy';
+                else if (page === 'terms') path = '/terms';
+                else if (page === 'contact') path = '/contact';
+                window.history.pushState({ page, slug: slug || null }, '', path);
+                nextTick(() => { try { (adsbygoogle = window.adsbygoogle || []).push({}); } catch(e){} });
+                window.scrollTo(0, 0);
+            };
+
+            const handlePopState = (e) => {
+                const state = e.state;
+                if (!state || state.page === 'home') {
+                    currentPage.value = 'home';
+                    selectedPost.value = null;
+                    selectedDevice.value = null;
+                } else if (state.page === 'blog') {
+                    currentPage.value = 'blog';
+                    if (state.slug) {
+                        const post = BLOG_POSTS.find(p => p.id === state.slug);
+                        selectedPost.value = post || null;
+                    } else {
+                        selectedPost.value = null;
+                    }
+                } else {
+                    currentPage.value = state.page;
+                    selectedPost.value = null;
+                    selectedDevice.value = null;
+                }
+                nextTick(() => refreshIcons());
+            };
+            const openPost = (post) => {
+                selectedPost.value = post;
+                navigateTo('blog', post.id);
+                nextTick(() => refreshIcons());
+            };
+            const submitContact = () => {
+                if (contactForm.value.name && contactForm.value.email && contactForm.value.message) {
+                    contactSent.value = true;
+                    contactForm.value = { name: "", email: "", message: "" };
+                    setTimeout(() => contactSent.value = false, 5000);
+                }
+            };
+
+            onMounted(() => {
+                fetchDevices();
+                trackPageView();
+                refreshIcons();
+
+                // Handle initial URL on page load
+                const path = window.location.pathname;
+                if (path === '/blog') {
+                    currentPage.value = 'blog';
+                    window.history.replaceState({ page: 'blog', slug: null }, '', '/blog');
+                } else if (path.startsWith('/blog/')) {
+                    const slug = path.replace('/blog/', '');
+                    const post = BLOG_POSTS.find(p => p.id === slug);
+                    if (post) { currentPage.value = 'blog'; selectedPost.value = post; }
+                    window.history.replaceState({ page: 'blog', slug }, '', path);
+                } else if (['/about','/privacy','/terms','/contact'].includes(path)) {
+                    currentPage.value = path.replace('/', '');
+                    window.history.replaceState({ page: path.replace('/', ''), slug: null }, '', path);
+                } else {
+                    window.history.replaceState({ page: 'home', slug: null }, '', '/');
+                }
+
+                window.addEventListener('popstate', handlePopState);
+            });
+
+            return {
+                devices, searchQuery, activeFilter, categories, filteredDevices,
+                selectedDevice, activeImage, compareMode, compareSelection, showCompareResult,
+                loading, error, currentPage, contactForm, contactSent, selectedPost, blogPosts,
+                fetchDevices, openDetails, closeDetails, getRelated, toggleCompareMode,
+                goHome, openPost, submitContact, navigateTo,
+                parsePrice: (p) => parseInt(String(p).replace(/,/g, '')),
+                isWinner: (item) => {
+                    if (compareSelection.value.length < 2) return false;
+                    const other = compareSelection.value.find(d => d.id !== item.id);
+                    if (!other) return false;
+                    return parseInt(String(item.price).replace(/,/g, '')) < parseInt(String(other.price).replace(/,/g, ''));
+                }
+            };
+        }
+    }).mount('#app');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3059181513838739" crossorigin="anonymous"></script>
+
+</body>
+</html>
         .blog-card:hover .blog-thumb { transform: scale(1.04); }
         .blog-thumb { transition: transform 0.4s ease; }
         @media (max-width: 640px) {
