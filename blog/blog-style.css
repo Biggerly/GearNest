@@ -1,114 +1,237 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Best Tablets for Work and Study in Nigeria 2025 | GearNest Blog</title>
-<meta name="description" content="From the iPad Pro M4 to budget Android options — find the right tablet for your Nigerian lifestyle and budget.">
-<meta name="author" content="GearNest Editorial">
-<meta property="og:title" content="Best Tablets for Work and Study in Nigeria 2025">
-<meta property="og:description" content="From the iPad Pro M4 to budget Android options — find the right tablet for your Nigerian lifestyle and budget.">
-<meta property="og:type" content="article">
-<link rel="canonical" href="https://gearnest.com.ng/blog/best-tablets-nigeria-2025.html">
-<meta name="google-adsense-account" content="ca-pub-3059181513838739">
-<link rel="stylesheet" href="/blog/blog-style.css">
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3059181513838739" crossorigin="anonymous"></script>
-</head>
-<body>
-<header class="site-header">
-    <div class="inner">
-        <a href="/" class="logo">GEARNEST</a>
-        <nav class="nav-links">
-            <a href="/" >Products</a>
-            <a href="/blog/" class=active>Blog</a>
-            <a href="/#about">About</a>
-            <a href="/#contact">Contact</a>
-        </nav>
-    </div>
-</header>
-<div class="container">
-    <a href="/blog/" class="back-link">&larr; Back to Blog</a>
+/* GearNest Blog — Shared Stylesheet */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
-    <div class="article-hero g-sky">📋</div>
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-    <span class="cat-tag">Buying Guide</span>
-    <h1 class="article-title">Best Tablets for Work and Study in Nigeria 2025</h1>
-    <div class="byline">
-        <strong>GearNest Editorial</strong>
-        <span>&middot;</span><span>March 18, 2025</span>
-        <span>&middot;</span><span>8 min read</span>
-    </div>
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: #f8fafc;
+    color: #1e293b;
+    line-height: 1.6;
+}
 
-    <div class="ad-wrap">
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-3059181513838739"
-     data-ad-slot="9661309118"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>
+a { color: #2563eb; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-    <div class="article-body">
-        
-<p>Tablets have found a genuine niche in Nigerian life. Students use them for digital note-taking. Professionals use them for presentations. Content creators use them for digital illustration. Here's our guide to the best tablets you can buy in Nigeria in 2025.</p>
-<h2>Why a Tablet Makes Sense in Nigeria</h2>
-<p>Tablets are more portable than laptops, more functional than phones, and high-end tablets can genuinely replace a laptop for many users. During power outages, a fully charged tablet provides hours of productivity without needing a power source.</p>
-<h2>Premium Choice: Apple iPad Air 13" M2 — ₦780,000</h2>
-<p>The iPad Air 13-inch with M2 chip offers pro-level performance without the Pro price tag. Apple Pencil Pro support makes this exceptional for architects, designers, and medical students.</p>
-<h2>Best Value: Samsung Galaxy Tab A9+ — ₦185,000</h2>
-<p>For buyers who want a large-screen tablet without iPad pricing, the Galaxy Tab A9+ is remarkable value. It handles university-level research, PDF reading, video lectures, and note-taking without difficulty.</p>
-<h2>For Content Creators: Lenovo Tab P12 Pro — ₦380,000</h2>
-<p>The 12.6-inch 2K AMOLED display is a visual treat for colour-accurate photo and video editing work.</p>
-<h2>Budget Option: Xiaomi Pad 6 — ₦195,000</h2>
-<p>The 144Hz LCD display is smooth and responsive, and the quad-speaker Dolby Atmos audio surpasses what you'd expect at this price point.</p>
-<h2>Choosing the Right Tablet</h2>
-<ul>
-<li><strong>Students:</strong> Samsung Galaxy Tab A9+ or Xiaomi Pad 6</li>
-<li><strong>Business professionals:</strong> iPad Air M2 with keyboard case</li>
-<li><strong>Creative professionals:</strong> iPad Pro M4 or Lenovo Tab P12 Pro</li>
-<li><strong>Family/entertainment:</strong> Samsung Galaxy Tab A9+</li>
-</ul>
-<p>Whichever you choose, add a protective case immediately — screen replacements on tablets are significantly more expensive than on phones.</p>
+.font-display { font-family: 'Space Grotesk', sans-serif; }
 
-    </div>
+/* Header */
+.site-header {
+    background: #fff;
+    border-bottom: 1px solid #f1f5f9;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.site-header .inner {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 14px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.logo {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #1d4ed8;
+    letter-spacing: -0.03em;
+}
+.nav-links { display: flex; gap: 18px; align-items: center; }
+.nav-links a { color: #475569; font-size: 0.85rem; font-weight: 600; }
+.nav-links a.active { color: #1d4ed8; }
 
-    <div class="ad-wrap">
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-3059181513838739"
-     data-ad-slot="9661309118"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-</div>
+/* Container */
+.container { max-width: 700px; margin: 0 auto; padding: 32px 20px 60px; }
+.container.wide { max-width: 880px; }
 
-    <h2 style="font-family:'Space Grotesk',sans-serif; font-size:1.2rem; margin-top:32px; margin-bottom:6px;">Related Articles</h2>
-    <div class="related-grid">
-        <a href="/blog/best-phones-under-200k-nigeria-2025.html" style="text-decoration:none;">
-        <div class="related-card">
-            <div class="related-emoji g-blue">📱</div>
-            <p>Best Smartphones Under ₦200,000 in Nigeria (2025)</p>
-        </div></a><a href="/blog/best-laptops-students-nigeria-2025.html" style="text-decoration:none;">
-        <div class="related-card">
-            <div class="related-emoji g-green">💻</div>
-            <p>Top 5 Laptops for Nigerian University Students in 2025</p>
-        </div></a>
-    </div>
+/* Article hero */
+.article-hero {
+    height: 220px;
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 6rem;
+}
+.cat-tag {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #2563eb;
+    margin-bottom: 8px;
+}
+h1.article-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.9rem;
+    font-weight: 800;
+    line-height: 1.2;
+    margin-bottom: 14px;
+    color: #0f172a;
+}
+.byline {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 28px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.byline strong { color: #475569; }
 
-    <a href="/" style="display:block; text-align:center; margin-top:32px; background:#2563eb; color:#fff; padding:14px; border-radius:12px; font-weight:700; text-decoration:none;">
-        Browse All Products &rarr;
-    </a>
-</div>
-<footer class="site-footer">
-    <p>© 2025 GearNest. All rights reserved. Prices are indicative and may vary.</p>
-    <div class="links">
-        <a href="/">Products</a>
-        <a href="/blog/">Blog</a>
-        <a href="/#privacy">Privacy Policy</a>
-        <a href="/#terms">Terms of Service</a>
-        <a href="/#contact">Contact</a>
-    </div>
-</footer>
-</body>
-</html>
+/* Article body */
+.article-body h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 32px 0 12px;
+    color: #1e293b;
+}
+.article-body h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 24px 0 10px;
+    color: #1e293b;
+}
+.article-body p { margin-bottom: 16px; color: #475569; font-size: 1rem; }
+.article-body ul { margin: 0 0 16px 22px; color: #475569; }
+.article-body ul li { margin-bottom: 8px; }
+.article-body strong { color: #1e293b; font-weight: 700; }
+.article-body blockquote {
+    border-left: 4px solid #2563eb;
+    padding-left: 16px;
+    margin: 24px 0;
+    font-style: italic;
+    color: #64748b;
+}
+
+/* Ad container */
+.ad-wrap { margin: 28px 0; min-height: 90px; }
+
+/* Related / back link */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 24px;
+}
+.related-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 16px;
+}
+@media (max-width: 600px) { .related-grid { grid-template-columns: 1fr; } }
+.related-card {
+    display: flex;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 14px;
+    padding: 12px;
+    align-items: center;
+}
+.related-emoji {
+    width: 48px; height: 48px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem;
+    flex-shrink: 0;
+}
+.related-card p { font-size: 0.85rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.3; }
+
+/* Blog index grid */
+.blog-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+    margin-top: 24px;
+}
+@media (max-width: 700px) { .blog-grid { grid-template-columns: 1fr; } }
+.blog-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 18px;
+    overflow: hidden;
+    transition: box-shadow 0.2s;
+}
+.blog-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.07); }
+.blog-card .thumb {
+    height: 130px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 3.2rem;
+}
+.blog-card .content { padding: 16px; }
+.blog-card .content h3 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 6px 0 8px;
+    line-height: 1.3;
+}
+.blog-card .content p { font-size: 0.82rem; color: #64748b; margin-bottom: 10px; }
+.blog-card .meta { font-size: 0.72rem; color: #94a3b8; }
+
+.featured-card {
+    background: #fff;
+    border: 1px solid #f1f5f9;
+    border-radius: 22px;
+    overflow: hidden;
+    display: flex;
+    margin-bottom: 24px;
+}
+@media (max-width: 600px) { .featured-card { flex-direction: column; } }
+.featured-card .thumb {
+    width: 38%;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 5rem;
+}
+@media (max-width: 600px) { .featured-card .thumb { width: 100%; height: 160px; } }
+.featured-card .content { padding: 22px; }
+.featured-badge {
+    display: inline-block;
+    background: #2563eb;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 99px;
+    margin-right: 6px;
+}
+
+/* Footer */
+.site-footer {
+    background: #fff;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 40px;
+    padding: 32px 20px;
+    text-align: center;
+}
+.site-footer p { font-size: 0.8rem; color: #94a3b8; margin-bottom: 8px; }
+.site-footer .links { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.site-footer .links a { font-size: 0.78rem; color: #64748b; }
+
+.g-blue { background: linear-gradient(135deg,#3b82f6,#4f46e5); }
+.g-slate { background: linear-gradient(135deg,#334155,#0f172a); }
+.g-green { background: linear-gradient(135deg,#10b981,#0d9488); }
+.g-gray { background: linear-gradient(135deg,#1f2937,#020617); }
+.g-orange { background: linear-gradient(135deg,#f97316,#dc2626); }
+.g-purple { background: linear-gradient(135deg,#8b5cf6,#db2777); }
+.g-violet { background: linear-gradient(135deg,#7c3aed,#6d28d9); }
+.g-cyan { background: linear-gradient(135deg,#2563eb,#06b6d4); }
+.g-amber { background: linear-gradient(135deg,#f59e0b,#ea580c); }
+.g-sky { background: linear-gradient(135deg,#0ea5e9,#2563eb); }
