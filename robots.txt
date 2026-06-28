@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://gearnested.web.app/sitemap.xml
+Sitemap: https://gearnest.com.ng/sitemap.xml
